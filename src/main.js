@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CHAPTERS, CAST, epilogue } from './story.js';
 import { buildWorld } from './world.js';
+import { initBuildings } from './buildings.js';
 import { initPeople, makeCharacter, crowdPoses, peopleDebug } from './people.js';
 import { Audio } from './audio.js';
 import { Voice, voiceDebug, preloadVoice } from './voice.js';
@@ -699,7 +700,7 @@ function renderMenuScene(dt) {
 document.documentElement.lang = state.lang;
 if (window.speechSynthesis) speechSynthesis.addEventListener('voiceschanged', () => { if (mode === 'menu') renderMenu(); });
 el.menu.innerHTML = '<div class="menu-inner"><div class="sub">Načítavam… / Loading…</div></div>';
-initPeople().then(() => { openMenu(); tick(); });
+Promise.all([initPeople(), initBuildings()]).then(() => { openMenu(); tick(); });
 
 // ladenie / automatické testy
 window.__game = { voiceDebug, people: peopleDebug, loadChapter: (i) => { show(el.menu, false); loadChapter(i); }, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };

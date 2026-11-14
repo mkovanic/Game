@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as T from './textures.js';
 import { makeCharacter, crowdPoses } from './people.js';
+import { makeBuilding } from './buildings.js';
 
 // ───────────────────────────── pomocné ─────────────────────────────
 const matCache = new Map();
@@ -225,6 +226,26 @@ class Builder {
     if (lit && this.env.night) {
       const L = new THREE.SpotLight(0xffd9a0, 300, 60, 0.7, 0.6, 1.5);
       L.position.set(cx, 2, front + 22); L.target.position.set(cx, h * 0.6, front);
+      this.add(L); this.add(L.target);
+    }
+  }
+
+  // historická budova SND (model 36 × 18 m, priečelie k +Z, rizalit s portikom vystupuje o 5 m)
+  snd(cx, cz, { sign = null, lit = false } = {}) {
+    const b = makeBuilding('snd', { night: this.env.night, lit: lit ? 1.1 : 0.25 });
+    b.position.set(cx, 0, cz);
+    this.add(b);
+    this.collideBox(cx, cz, 36, 18);
+    this.collideBox(cx, cz + 11.5, 14, 5.4);
+    if (sign) {
+      const t = T.signTex([sign], { bg: '#f1ecd9', fg: '#4a3a1c', w: 1024, h: 128 });
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.05), new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 }));
+      p.position.set(cx, 19.95, cz + 11.32);
+      this.add(p);
+    }
+    if (lit && this.env.night) {
+      const L = new THREE.SpotLight(0xffd9a0, 420, 70, 0.75, 0.6, 1.5);
+      L.position.set(cx, 2, cz + 34); L.target.position.set(cx, 12, cz + 9);
       this.add(L); this.add(L.target);
     }
   }
@@ -613,7 +634,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     B.row({ axis: 'z', fixed: -19, from: -46, to: 46, depth: 12, facing: -1, seed: 3 });
     B.row({ axis: 'z', fixed: 19, from: -46, to: 46, depth: 12, facing: 1, seed: 4 });
     B.row({ axis: 'x', fixed: 48, from: -19, to: 19, depth: 12, facing: 1, seed: 5 });
-    B.grand(0, -60, 34, 18, 16, { color: 0xd8c49a, sign: 'SLOVENSKÉ NÁRODNÉ DIVADLO', lit: true });
+    B.snd(0, -60, { sign: 'SLOVENSKÉ NÁRODNÉ DIVADLO', lit: true });
     B.row({ axis: 'x', fixed: -50, from: -40, to: -18, depth: 12, facing: -1, seed: 6 });
     B.row({ axis: 'x', fixed: -50, from: 18, to: 40, depth: 12, facing: -1, seed: 7 });
     B.statue(0, -12, { scale: 1.5 });

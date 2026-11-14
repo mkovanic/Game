@@ -30,6 +30,10 @@ Slovenský dabing sa po úprave textov v `src/story.js` pregeneruje takto: `node
 
 Postavy a dav sú realistické otextúrované rigované modely s motion-capture animáciami z knižnice **[Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox)** (autor: Microsoft, licencia MIT) – 18 postáv a 16 animácií na spoločnom skelete (`assets/people/*.glb`). Konverziu robí `tools/people.sh` (Blender `tools/convert.py`: zloženie textúr do atlasu, export GLB; `tools/pack.mjs`: meshopt kompresia cez gltf-transform). Oblečenie sa v shaderi prefarbuje podľa častí tela do tmavších zimných tónov (`look.coat`, `look.pants`), trup je mierne „nafúknutý“ a postavy dostávajú čiapky, šatky a šály. Dav sa kreslí inštancovane zo „zapečených“ póz 8 modelov v dvoch úrovniach detailu.
 
+### Budovy
+
+Historická budova SND v prológu je vymodelovaná skriptom v Blenderi (`tools/buildings/snd.py` → `assets/buildings/snd.glb`, ~9 400 trojuholníkov, 120 kB) podľa fotografie [Bratislava Hviezdoslavovo nam opera SND.jpg](https://commons.wikimedia.org/wiki/File:Bratislava_Hviezdoslavovo_nam_opera_SND.jpg) (autor: Peter Zelizňák, public domain, Wikimedia Commons). Fotka slúžila len ako predloha proporcií a farieb; model neobsahuje žiadne textúry z nej. Ostatné scény sú zatiaľ procedurálne (`src/world.js`).
+
 ## Vývoj
 
 ```bash
@@ -50,7 +54,7 @@ Pridanie novej kapitoly = nový objekt v `CHAPTERS` v `story.js` (+ prípadne no
 ### Ďalšie možné kroky
 
 - Nahradiť syntetický dabing nahratými hlasmi hercov alebo AI hlasmi (súbory `.mp3` podľa ID uzla dialógu).
-- Detailnejšie 3D modely (glTF) skutočných budov – SND, Univerzita Komenského, Námestie SNP.
+- Ďalšie budovy podľa vzoru SND: Univerzita Komenského, Námestie SNP, chemický závod, hraničný priechod Petržalka – Berg.
 - Natívna aplikácia pre Mac/Windows (Electron/Tauri obal okolo `dist/index.html`).
 - Ďalšie kapitoly: 1968 (august), SNP 1944, voľby 1990, vznik SR 1993.
 
