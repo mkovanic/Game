@@ -22,13 +22,13 @@ Ovládanie: **WASD** chôdza · **myš** rozhliadanie (klikni do hry) · **Shift
 
 ### Dabing (slovenčina / angličtina)
 
-Hlasy zabezpečuje syntetizátor reči operačného systému (Web Speech API), preto nie sú potrebné žiadne zvukové súbory:
+Všetky repliky sú **vopred nahrané neurálnymi hlasmi** (`dist/voice/*.mp3`) – fungujú v každom prehliadači bez nastavovania. Slovenčina: Piper „lili“ (mužské postavy vznikli posunom výšky hlasu), angličtina: Kokoro (rôzne mužské a ženské hlasy). Priečinok `voice/` musí ležať vedľa `index.html`. Ak nahrávka chýba (napr. epilóg), použije sa hlas systému.
 
-- **Microsoft Edge** (Windows aj Mac) má najprirodzenejšie neurálne hlasy vrátane slovenských (Viktória, Lukáš).
-- **macOS:** Systémové nastavenia → Prístupnosť → Hovorený obsah → Systémový hlas → Spravovať hlasy → *Slovenčina (Laura)*.
-- **Windows:** Nastavenia → Čas a jazyk → Reč → Pridať hlasy → *Slovenčina*.
+Dabing sa po úprave textov v `src/story.js` pregeneruje takto: `node tools-export.mjs > lines.json` a `python3 tools-voice.py` (vyžaduje `sherpa-onnx==1.12.40`, `ffmpeg` a modely z vydania *tts-models* projektu k2-fsa/sherpa-onnx).
 
-Ak slovenský hlas chýba, hra na to upozorní v menu a texty sa zobrazia aj bez dabingu.
+### 3D postavy
+
+Postavy a dav používajú skutočné rigované modely s motion-capture animáciami (`assets/Xbot.glb`, `assets/Soldier.glb` – z projektu three.js, pôvod Mixamo). Civilisti sú prefarbení podľa častí tela a doplnení o vlasy, čiapky a šály; dav používa „zapečené“ pózy s dvoma úrovňami detailu. V menu sa dá prepnúť **Grafika: nízka** pre slabšie počítače.
 
 ## Vývoj
 

@@ -1,9 +1,14 @@
 import * as THREE from 'three';
 import { CHAPTERS, CAST, epilogue } from './story.js';
-import { buildWorld, makePerson } from './world.js';
+import { buildWorld } from './world.js';
+import { initPeople, makeCharacter, crowdPoses } from './people.js';
 import { Audio } from './audio.js';
-import { Voice } from './voice.js';
+import { Voice, voiceDebug, preloadVoice } from './voice.js';
 import * as T from './textures.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 // ───────────────────────────── texty rozhrania ─────────────────────────────
 const UI = {
@@ -17,7 +22,7 @@ const UI = {
     epilogue: 'Epilóg', theEnd: 'Koniec', courage: 'Odvaha', trust: 'Dôvera', chapter: 'Kapitola', prologue: 'Prológ',
     noVoiceSk: 'Na tomto zariadení chýba slovenský hlas. <b>Mac:</b> Systémové nastavenia → Prístupnosť → Hovorený obsah → Systémový hlas → Spravovať hlasy → Slovenčina. <b>Windows:</b> Nastavenia → Čas a jazyk → Reč → Pridať hlasy → Slovenčina. Najprirodzenejšie hlasy má prehliadač <b>Microsoft Edge</b>.',
     noVoiceEn: 'Na tomto zariadení chýba anglický hlas.',
-    voices: 'Nájdené hlasy', noSpeech: 'Tento prehliadač nepodporuje syntézu reči – texty sa zobrazia bez dabingu.',
+    quality: 'Grafika', qHigh: 'vysoká', qLow: 'nízka (rýchlejšia)', voiceInfo: 'Dabing: nahrané neurálne hlasy (SK aj EN) – fungujú v každom prehliadači.', voices: 'Nájdené hlasy', noSpeech: 'Tento prehliadač nepodporuje syntézu reči – texty sa zobrazia bez dabingu.',
     hint: 'medzerník / klik – ďalej', choose: 'vyber 1 – 3', clickToLook: 'Klikni do hry pre ovládanie myšou',
     again: 'Hrať znova', credits: 'Vytvorené s Three.js. Zvuky sú syntetizované, dabing zabezpečuje hlasový syntetizér systému.',
     objective: 'Úloha',
@@ -32,7 +37,7 @@ const UI = {
     epilogue: 'Epilogue', theEnd: 'The End', courage: 'Courage', trust: 'Trust', chapter: 'Chapter', prologue: 'Prologue',
     noVoiceSk: 'No Slovak voice found on this device. <b>Mac:</b> System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → Slovak. <b>Windows:</b> Settings → Time & Language → Speech → Add voices → Slovak. <b>Microsoft Edge</b> has the most natural voices.',
     noVoiceEn: 'No English voice found on this device.',
-    voices: 'Voices found', noSpeech: 'This browser does not support speech synthesis – text will be shown without voice-over.',
+    quality: 'Graphics', qHigh: 'high', qLow: 'low (faster)', voiceInfo: 'Voice-over: pre-recorded neural voices (Slovak and English) – works in every browser.', voices: 'Voices found', noSpeech: 'This browser does not support speech synthesis – text will be shown without voice-over.',
     hint: 'space / click – next', choose: 'choose 1 – 3', clickToLook: 'Click the game to control with the mouse',
     again: 'Play again', credits: 'Made with Three.js. Sounds are synthesised; voice-over uses your system\'s speech synthesiser.',
     objective: 'Objective',
@@ -41,14 +46,14 @@ const UI = {
 
 // ───────────────────────────── stav ─────────────────────────────
 const SAVE_KEY = 'sviecky-a-kluce-v1';
-const state = { chapter: 0, maxChapter: 0, stats: { courage: 0, trust: 0 }, flags: {}, lang: 'sk', voice: true };
+const state = { chapter: 0, maxChapter: 0, stats: { courage: 0, trust: 0 }, flags: {}, lang: 'sk', voice: true, quality: /[?&]lite/.test(location.search) ? 'low' : 'high' };
 let snapshot = null; // stav na začiatku kapitoly (pre pokračovanie)
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
   if (s) { Object.assign(state, s.settings || {}); snapshot = s.snapshot || null; state.maxChapter = s.maxChapter || 0; }
 } catch {}
 function save() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: { lang: state.lang, voice: state.voice }, snapshot, maxChapter: state.maxChapter })); } catch {}
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: { lang: state.lang, voice: state.voice, quality: state.quality }, snapshot, maxChapter: state.maxChapter })); } catch {}
 }
 const L = () => UI[state.lang];
 const tr = (o) => (o ? o[state.lang] ?? o.sk : '');
@@ -57,16 +62,23 @@ Voice.enabled = state.voice;
 // ───────────────────────────── renderer ─────────────────────────────
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
+renderer.setPixelRatio(state.quality === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
+renderer.shadowMap.enabled = state.quality === 'high';
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 900);
 camera.rotation.order = 'YXZ';
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }));
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(4, 4), 0.45, 0.7, 0.82);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(w, h);
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize); resize();
@@ -114,15 +126,16 @@ function loadChapter(i) {
   clear.push([-1.3, 1.3, -200, 200]);
   world = buildWorld(scene, chapterDef.scene, { clear });
   renderer.toneMappingExposure = world.exposure;
+  bloom.strength = world.night ? 0.6 : 0.22;
   for (const n of chapterDef.npcs) {
-    const obj = makePerson(n.look);
+    const obj = makeCharacter({ ...n.look, glow: T.glowSprite(), long: n.voice.g === 'f' });
     obj.position.set(n.pos[0], 0, n.pos[1]);
     obj.rotation.y = Math.atan2(chapterDef.spawn[0] - n.pos[0], chapterDef.spawn[1] - n.pos[1]);
     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.label(tr(n.name)), depthTest: false, transparent: true }));
-    label.scale.set(2.2, 0.55, 1); label.position.y = 2.25; label.renderOrder = 10;
+    label.scale.set(1.8, 0.45, 1); label.position.y = 2.12; label.renderOrder = 10;
     obj.add(label);
     const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshBasicMaterial({ color: 0xffc94a, depthTest: false, transparent: true, opacity: 0.95 }));
-    marker.position.y = 2.75; marker.renderOrder = 11;
+    marker.position.y = 2.5; marker.renderOrder = 11;
     obj.add(marker);
     scene.add(obj);
     npcs.push({ def: n, obj, label, marker, ph: Math.random() * 6 });
@@ -130,6 +143,7 @@ function loadChapter(i) {
   player.x = chapterDef.spawn[0]; player.z = chapterDef.spawn[1];
   player.yaw = 0; player.pitch = 0;
   Audio.ambience(chapterDef.scene);
+  preloadVoice(state.lang, chapterDef.id);
   refreshHud();
 }
 
@@ -153,7 +167,7 @@ function refreshHud() {
 
 // ───────────────────────────── karty (úvod, história, epilóg) ─────────────────────────────
 let cardSpeech = null;
-function showCard({ kicker, title, sub, body, button, onNext, speak = true, extra = '' }) {
+function showCard({ kicker, title, sub, body, button, onNext, speak = true, extra = '', voiceKey = null }) {
   mode = 'card';
   document.exitPointerLock?.();
   el.card.innerHTML = `
@@ -166,7 +180,7 @@ function showCard({ kicker, title, sub, body, button, onNext, speak = true, extr
       <button class="primary" id="cardBtn">${button}</button>
     </div>`;
   show(el.card); show(el.hud, false); show(el.dlg, false);
-  if (speak) cardSpeech = Voice.speak(body.replace(/\n/g, ' '), state.lang, CAST.narrator.voice);
+  if (speak) cardSpeech = Voice.speak(body.replace(/\n/g, ' '), state.lang, CAST.narrator.voice, voiceKey);
   $('cardBtn').onclick = () => { Voice.stop(); Audio.sfx('blip'); show(el.card, false); onNext(); };
   $('cardBtn').focus();
 }
@@ -178,6 +192,7 @@ function introCard(i) {
     title: tr(c.title),
     sub: `${tr(c.date)} · ${tr(c.place)}`,
     body: tr(c.intro),
+    voiceKey: `${c.id}.intro`,
     button: L().start,
     onNext: () => startPlay(),
   });
@@ -197,6 +212,7 @@ function chapterComplete() {
       kicker: `${chapterName(state.chapter)} · ${tr(c.title)}`,
       title: L().history,
       body: tr(c.history),
+      voiceKey: `${c.id}.history`,
       button: L().next,
       onNext: () => {
         const next = state.chapter + 1;
@@ -233,14 +249,7 @@ function openMenu() {
 function renderMenu() {
   const l = L();
   const chapters = CHAPTERS.map((c, i) => `<button class="chap" data-i="${i}" ${i > state.maxChapter ? 'disabled' : ''}><b>${chapterName(i)}</b> ${tr(c.title)}<small>${tr(c.date)}</small></button>`).join('');
-  let vs = '';
-  if (!Voice.available()) vs = `<div class="warn">${l.noSpeech}</div>`;
-  else {
-    const sk = Voice.voicesFor('sk'), en = Voice.voicesFor('en');
-    vs = `<div class="voices">${l.voices}: SK ${sk.length ? '✓ ' + sk.slice(0, 3).map((v) => v.name).join(', ') : '✗'} · EN ${en.length ? '✓ ' + en.length : '✗'}</div>`;
-    if (!sk.length && state.lang === 'sk') vs += `<div class="warn">${l.noVoiceSk}</div>`;
-    if (!en.length && state.lang === 'en') vs += `<div class="warn">${l.noVoiceEn}</div>`;
-  }
+  const vs = `<div class="voices">${l.voiceInfo}</div>`;
   el.menu.innerHTML = `
     <div class="menu-inner">
       <div class="logo"><span class="candle"></span><span class="keys">🔑</span></div>
@@ -254,6 +263,7 @@ function renderMenu() {
         <span>${l.lang}:</span>
         <button class="toggle ${state.lang === 'sk' ? 'on' : ''}" data-lang="sk">Slovensky</button>
         <button class="toggle ${state.lang === 'en' ? 'on' : ''}" data-lang="en">English</button>
+        <button class="toggle" id="btnQ">${l.quality}: ${state.quality === 'high' ? l.qHigh : l.qLow}</button>
         <span style="margin-left:14px">${l.voice}:</span>
         <button class="toggle ${state.voice ? 'on' : ''}" id="btnVoice">${state.voice ? l.on : l.off}</button>
       </div>
@@ -278,6 +288,7 @@ function renderMenu() {
     begin(i, snapshot && snapshot.chapter === i ? snapshot : { stats: { courage: i, trust: i }, flags: { refused: i > 1 } });
   }));
   el.menu.querySelectorAll('[data-lang]').forEach((b) => (b.onclick = () => setLang(b.dataset.lang)));
+  $('btnQ').onclick = () => { state.quality = state.quality === 'high' ? 'low' : 'high'; save(); location.reload(); };
   $('btnVoice').onclick = () => { state.voice = !state.voice; Voice.enabled = state.voice; if (!state.voice) Voice.stop(); save(); renderMenu(); };
 }
 
@@ -341,7 +352,7 @@ function startDialogue(n) {
   else if (talked[d.id]) start = d.after;
   else start = d.start;
   dlg.startedFrom = start;
-  show(el.dlg); show(el.prompt, false);
+  show(el.dlg); show(el.prompt, false); document.body.classList.add('talking');
   Audio.sfx('blip');
   goNode(start);
 }
@@ -377,6 +388,7 @@ function goNode(id) {
   if (!node) { endDialogue(); return; }
   dlg.nodeId = id;
   dlg.node = node;
+  dlg.key = `${chapterDef.id}.${id}`;
   applyFx(node);
   if (node.sfx) Audio.sfx(node.sfx);
   renderNode(false);
@@ -393,7 +405,7 @@ function renderNode(refresh) {
   el.choices.innerHTML = '';
   el.hint.textContent = '';
   const token = ++dlg.voiceToken;
-  Voice.speak(dlg.full, state.lang, sp.voice).then(() => {
+  Voice.speak(dlg.full, state.lang, sp.voice, dlg.key).then(() => {
     // automaticky nič neposúvame – hráč číta vlastným tempom
     if (token !== dlg.voiceToken) return;
   });
@@ -429,6 +441,7 @@ function choose(i) {
   Audio.sfx('blip');
   applyFx(c);
   // hráč vysloví svoju voľbu
+  dlg.key = `${chapterDef.id}.${dlg.nodeId}.c${i}`;
   dlg.node = { who: 'player', sk: c.sk, en: c.en, next: c.next };
   renderNode(false);
 }
@@ -445,7 +458,7 @@ function advance() {
 
 function endDialogue() {
   Voice.stop();
-  show(el.dlg, false);
+  show(el.dlg, false); document.body.classList.remove('talking');
   const d = dlg.npc.def;
   const wasMain = dlg.startedFrom === d.start;
   if (wasMain) talked[d.id] = true;
@@ -634,7 +647,7 @@ function tick() {
     while (dy < -Math.PI) dy += Math.PI * 2;
     player.yaw += dy * Math.min(1, dt * 4);
     const dist = Math.hypot(p.x - player.x, p.z - player.z);
-    const tp = Math.atan2(1.68 - 1.65, dist) - 0.04;
+    const tp = Math.atan2(1.6 - 1.65, dist) - 0.02;
     player.pitch += (tp - player.pitch) * Math.min(1, dt * 4);
   }
 
@@ -642,24 +655,19 @@ function tick() {
   const ready = chapterDef && allRequiredDone();
   for (const n of npcs) {
     const o = n.obj, u = o.userData;
-    u.body.scale.y = 1 + Math.sin(time * 1.6 + n.ph) * 0.008;
     const dx = player.x - o.position.x, dz = player.z - o.position.z;
     const d = Math.hypot(dx, dz);
-    const target = Math.atan2(dx, dz);
-    if (d < 6 || (mode === 'dialogue' && dlg.npc === n)) {
-      let a = target - o.rotation.y;
-      while (a > Math.PI) a -= Math.PI * 2;
-      while (a < -Math.PI) a += Math.PI * 2;
-      if (mode === 'dialogue' && dlg.npc === n) o.rotation.y += a * Math.min(1, dt * 3);
-      else u.head.rotation.y += (Math.max(-1, Math.min(1, a)) - u.head.rotation.y) * Math.min(1, dt * 3);
-    } else u.head.rotation.y *= 0.97;
-    // gestá pri rozprávaní
-    const talking = mode === 'dialogue' && dlg.npc === n && dlg.node && dlg.node.who === n.def.id;
-    if (u.armL) u.armL.rotation.x = talking ? -0.35 + Math.sin(time * 3) * 0.25 : u.armL.rotation.x * 0.9;
+    const inTalk = mode === 'dialogue' && dlg.npc === n;
+    let a = Math.atan2(dx, dz) - o.rotation.y;
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    if (inTalk) o.rotation.y += a * Math.min(1, dt * 3);
+    const talking = inTalk && dlg.node && dlg.node.who === n.def.id;
+    u.tick(dt, d < 6 && !inTalk ? Math.max(-0.9, Math.min(0.9, a)) : 0, talking, time + n.ph);
     if (u.flame) u.flame.scale.setScalar(0.2 + Math.sin(time * 19 + n.ph) * 0.02);
     const needs = !talked[n.def.id] && (n.def.required || (n.def.final && ready));
     n.marker.visible = needs;
-    n.marker.position.y = 2.75 + Math.sin(time * 3 + n.ph) * 0.08;
+    n.marker.position.y = 2.5 + Math.sin(time * 3 + n.ph) * 0.08;
     n.marker.rotation.y = time * 2;
     n.label.visible = d < 14;
   }
@@ -669,7 +677,7 @@ function tick() {
   const bob = Math.sin(player.bob) * 0.035;
   camera.position.set(player.x, 1.65 + bob, player.z);
   camera.rotation.set(player.pitch, player.yaw, 0);
-  renderer.render(scene, camera);
+  (state.quality === 'high' ? composer.render() : renderer.render(scene, camera));
 }
 
 // pozadie hlavného menu – pomaly sa otáčajúca scéna so sviečkami
@@ -682,16 +690,16 @@ function renderMenuScene(dt) {
   const t = time * 0.05;
   camera.position.set(Math.sin(t) * 6, 2.4, 30 + Math.cos(t) * 4);
   camera.rotation.set(-0.05, Math.sin(t) * 0.25, 0);
-  menuWorld.update(time, dt, { x: 0, z: 25 });
-  renderer.render(scene, camera);
+  menuWorld.update(time, dt, { x: 0, z: 27 });
+  (state.quality === 'high' ? composer.render() : renderer.render(scene, camera));
 }
 
 
 // ───────────────────────────── štart ─────────────────────────────
 document.documentElement.lang = state.lang;
 if (window.speechSynthesis) speechSynthesis.addEventListener('voiceschanged', () => { if (mode === 'menu') renderMenu(); });
-openMenu();
-tick();
+el.menu.innerHTML = '<div class="menu-inner"><div class="sub">Načítavam… / Loading…</div></div>';
+initPeople().then(() => { openMenu(); tick(); });
 
 // ladenie / automatické testy
-window.__game = { player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };
+window.__game = { voiceDebug, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };

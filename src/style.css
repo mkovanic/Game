@@ -99,3 +99,12 @@ kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border-radius: 
   #stats { display: none; }
   #chapterTag span { font-size: 16px; }
 }
+
+/* filmový vzhľad: vinetácia + čierne pásy počas rozhovoru */
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%); z-index: 0; }
+#hud, #dialogue, .overlay, #fade { z-index: 2; }
+body::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 0; background: #000; transition: height .5s ease; z-index: 1; pointer-events: none; }
+body.talking::before { height: 9vh; }
+body.talking #chapterTag, body.talking #objective, body.talking #stats, body.talking #crosshair { opacity: 0; transition: opacity .4s; }
+#dialogue { backdrop-filter: blur(10px); background: linear-gradient(180deg, rgba(14,16,22,.72), rgba(8,9,13,.9)); border-left: 3px solid var(--accent); border-radius: 4px 16px 16px 4px; }
+#line { text-wrap: pretty; }

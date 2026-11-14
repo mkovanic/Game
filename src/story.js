@@ -51,7 +51,7 @@ export const CHAPTERS = [
           { sk: 'Prečo ste sem prišli?', en: 'Why did you come here?', next: 'a2' },
           { sk: 'Nebojíte sa?', en: 'Aren\'t you afraid?', next: 'a3' },
         ] },
-      a2: { who: 'anna', sk: 'Chcem, aby môj vnuk mohol chodiť do kostola a nevyhodili ho za to zo školy. Chceme náboženskú slobodu a občianske práva. Nič viac.', en: "I want my grandson to be able to go to church without being thrown out of school for it. We want religious freedom and civil rights. Nothing more.", next: 'a4' },
+      a2: { who: 'anna', sk: 'Vnuka mi nechceli vziať na gymnázium, lebo miništruje. Nechceme veľa – len aby sa človek nemusel báť veriť a povedať, čo si myslí.', en: "They wouldn't let my grandson into grammar school because he serves at the altar. We don't ask for much – just not to be afraid to believe, and to say what we think.", next: 'a4' },
       a3: { who: 'anna', sk: 'Bojím sa. Ale strach som mala celý život. Dnes ho nechám stáť tu na daždi.', en: "I am afraid. But I've been afraid my whole life. Tonight I'll leave my fear standing out here in the rain.", fx: { courage: 1 }, next: 'a4' },
       a4: { who: 'anna', sk: 'Tvoja priateľka je pri soche. Videla som ju. Choď, a drž sviečku tak, aby nezhasla.', en: "Your friend is by the statue. I saw her. Go – and hold the candle so it doesn't go out." },
       a_after: { who: 'anna', sk: 'Drž tú sviečku, synku. Pokojne.', en: 'Hold that candle, son. Calmly.' },
@@ -117,7 +117,7 @@ export const CHAPTERS = [
       },
     ],
     nodes: {
-      s1: { who: 'peto', sk: 'Jano! Ideme k ministerstvu školstva. Chceme slobodné štúdium, slobodu prejavu a dialóg. Žiadne previerky, žiadne vyhadzovanie zo školy za názor.', en: "Jano! We're marching to the Ministry of Education. We want free study, freedom of speech and dialogue. No more vetting, no more expulsions for opinions.",
+      s1: { who: 'peto', sk: 'Jano, no konečne! Ideme k ministerstvu školstva. Chceme, aby sa s nami konečne niekto rozprával. A aby nikto neletel zo školy za to, čo si myslí.', en: "Jano, at last! We're marching to the Ministry of Education. We want someone to finally talk to us. And nobody kicked out of school for what they think.",
         choices: [
           { sk: 'Nezavrú nás?', en: "Won't they lock us up?", next: 's2' },
           { sk: 'S čím môžem pomôcť?', en: 'How can I help?', next: 's3', fx: { trust: 1 } },
@@ -126,7 +126,7 @@ export const CHAPTERS = [
       s3: { who: 'peto', sk: 'Nes s nami transparent. A hovor pokojne – žiadne násilie. Pokoj je naša najväčšia sila.', en: 'Carry a banner with us. And keep calm – no violence. Calm is our greatest strength.' },
       s_after: { who: 'peto', sk: 'Ideme už o chvíľu!', en: "We're moving in a minute!" },
 
-      e1: { who: 'kollar', sk: 'Ján Mráz, však? Prvý ročník, filozofická fakulta. Otec pracuje v chemickom závode. Vidíte, všetko o vás vieme.', en: "Ján Mráz, isn't it? First year, Faculty of Arts. Your father works at the chemical plant. You see, we know everything about you.", next: 'e2' },
+      e1: { who: 'kollar', sk: 'Ján Mráz, však? Tretí ročník, filozofická fakulta. Otec pracuje v chemickom závode. Vidíte, všetko o vás vieme.', en: "Ján Mráz, isn't it? Third year, Faculty of Arts. Your father works at the chemical plant. You see, we know everything about you.", next: 'e2' },
       e2: { who: 'kollar', sk: 'Mohli by sme si navzájom pomôcť. Napíšete nám, kto tieto… akcie organizuje. A štúdium dokončíte bez problémov. Aj otec bude mať pokoj.', en: "We could help each other. You'll write down who organises these… events. And you'll finish your studies without trouble. Your father will be left in peace too.",
         choices: [
           { sk: 'Nie. Nebudem udávať priateľov.', en: "No. I won't inform on my friends.", next: 'e3', fx: { courage: 2 }, flag: 'refused' },
@@ -192,7 +192,7 @@ export const CHAPTERS = [
       },
     ],
     nodes: {
-      i1: { who: 'igor', sk: 'Divadlá štrajkujú. Namiesto predstavení diskutujeme s ľuďmi. Toto je najväčšie predstavenie môjho života – a nikto v ňom nehrá.', en: "The theatres are on strike. Instead of performances we hold discussions with people. This is the greatest show of my life – and nobody is acting.",
+      i1: { who: 'igor', sk: 'Dnes sa nehrá, mladý muž. Divadlá štrajkujú. Namiesto predstavení sa večer čo večer rozprávame s ľuďmi. Najväčšie predstavenie môjho života – a nikto v ňom nehrá.', en: "No show tonight, young man. The theatres are on strike. Instead of performing, we talk with people, night after night. The greatest show of my life – and nobody is acting.",
         choices: [
           { sk: 'Čo je Verejnosť proti násiliu?', en: 'What is Public Against Violence?', next: 'i2' },
           { sk: 'Prečo ľudia štrngajú kľúčmi?', en: 'Why are people jingling their keys?', next: 'i3' },
@@ -357,7 +357,7 @@ export const CHAPTERS = [
         branch: (st) => (st.flags.hesitated && !st.flags.promised ? 'k2h' : 'k2') },
       k2h: { who: 'katka', sk: 'A ten muž v koženom kabáte… zavolal ti ešte?', en: 'And that man in the leather coat… did he ever call you?', next: 'k2h2' },
       k2h2: { who: 'player', sk: 'Nie. Už nezavolá nikomu.', en: "No. He won't be calling anyone any more.", next: 'k2' },
-      k2: { who: 'katka', sk: 'Čo budeš robiť, keď bude všetko slobodné? Naozaj všetko?', en: 'What will you do when everything is free? Really everything?',
+      k2: { who: 'katka', sk: 'A čo teraz, Jano? Čo budeš robiť, keď už naozaj môžeš všetko?', en: 'So what now, Jano? What will you do, now that you really can do anything?',
         choices: [
           { sk: 'Pôjdem do sveta. A potom sa vrátim domov.', en: "I'll see the world. And then I'll come back home.", next: 'k3a' },
           { sk: 'Budem sa starať, aby sa sem strach už nevrátil.', en: "I'll make sure fear never comes back here.", next: 'k3b', fx: { courage: 1 } },

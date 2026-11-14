@@ -10,6 +10,7 @@ const res = await build({
   target: ['es2020', 'safari15'],
   write: false,
   legalComments: 'none',
+  loader: { '.glb': 'binary', '.json': 'json' },
 });
 const js = res.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 const css = readFileSync('src/style.css', 'utf8');

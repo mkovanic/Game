@@ -4,6 +4,34 @@
 const FEMALE = /(laura|viktoria|viktória|zuzana|samantha|karen|serena|moira|tessa|victoria|zira|hazel|susan|libby|sonia|aria|jenny|female|žena|kate|fiona|emma|ava|allison|natasha|clara)/i;
 const MALE = /(filip|lukas|lukáš|daniel|alex|fred|arthur|oliver|david|mark|george|ryan|guy|(?<!fe)male|muž|james|tom|aaron|rishi|thomas|william|brian|christopher)/i;
 
+import manifest from './voice-manifest.json';
+
+// Nahraný dabing: jeden MP3 „sprite“ na jazyk a kapitolu, manifest = { 'sk/kapitola.uzol': [súbor, začiatok, dĺžka] }
+const players = {};
+let cur = null, timer = null, gen = 0;
+function playSprite(lang, key) {
+  const m = manifest[`${lang}/${key}`];
+  if (!m) return Promise.resolve(false);
+  const my = gen;
+  return new Promise((res) => {
+    let a = players[m[0]];
+    if (!a) { a = players[m[0]] = new Audio((window.__voiceBase || 'voice/') + m[0]); a.preload = 'auto'; }
+    const start = () => {
+      if (my !== gen) return res(true);
+      try { a.currentTime = m[1]; } catch {}
+      cur = a;
+      a.play().then(() => { timer = setTimeout(() => { a.pause(); res(true); }, m[2] * 1000 + 120); }).catch(() => res(my !== gen));
+    };
+    if (a.readyState >= 1) start();
+    else { a.addEventListener('loadedmetadata', start, { once: true }); a.addEventListener('error', () => res(false), { once: true }); a.load(); }
+  });
+}
+export const voiceDebug = () => Object.entries(players).map(([k, a]) => [k, a.paused, +a.currentTime.toFixed(1), a.readyState, a.error && a.error.code]);
+export function preloadVoice(lang, chapter) {
+  const f = `${lang}-${chapter}.mp3`;
+  if (!players[f]) { const a = players[f] = new Audio((window.__voiceBase || 'voice/') + f); a.preload = 'auto'; a.load(); }
+}
+
 let voices = [];
 function load() { try { voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; } catch { voices = []; } }
 if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -36,12 +64,18 @@ export const Voice = {
     return { voice: best, genderMatch: g === 'f' ? FEMALE.test(best.name) : MALE.test(best.name) };
   },
 
-  stop() { try { window.speechSynthesis && speechSynthesis.cancel(); } catch {} },
+  stop() { gen++; clearTimeout(timer); if (cur) cur.pause(); try { window.speechSynthesis && speechSynthesis.cancel(); } catch {} },
 
-  speak(text, lang, { g = 'm', pitch = 1, rate = 1 } = {}) {
+  async speak(text, lang, opts = {}, key = null) {
+    if (!this.enabled) return;
+    this.stop();
+    if (key) { const my = gen; const ok = await playSprite(lang, key); if (ok || my !== gen) return; }
+    return this.synth(text, lang, opts);
+  },
+
+  synth(text, lang, { g = 'm', pitch = 1, rate = 1 } = {}) {
     return new Promise((resolve) => {
       if (!this.enabled || !window.speechSynthesis || !text || text === '…') return resolve();
-      this.stop();
       const u = new SpeechSynthesisUtterance(text.replace(/[–—]/g, ','));
       const p = this.pick(lang, g);
       u.lang = lang === 'sk' ? 'sk-SK' : 'en-GB';
