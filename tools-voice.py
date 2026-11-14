@@ -1,38 +1,71 @@
-import sherpa_onnx, numpy as np, soundfile as sf, json, subprocess, os, re, sys
-lines=json.load(open('lines.json'))
-OUT='/home/user/Game/dist/voice'; os.makedirs(OUT,exist_ok=True); os.makedirs('seg',exist_ok=True)
-d="vits-piper-sk_SK-lili-medium"
-sk=sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=f"{d}/sk_SK-lili-medium.onnx",tokens=f"{d}/tokens.txt",data_dir=f"{d}/espeak-ng-data"),num_threads=4)))
-d="kokoro-en-v0_19"
-en=sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(kokoro=sherpa_onnx.OfflineTtsKokoroModelConfig(model=f"{d}/model.onnx",voices=f"{d}/voices.bin",tokens=f"{d}/tokens.txt",data_dir=f"{d}/espeak-ng-data"),num_threads=4)))
-# who: (sk pitch, sk speed, en speaker, en pitch, en speed)
-V={'narrator':(0.70,0.95,9,0.97,0.95),'player':(0.76,1.0,10,1.0,1.0),'katka':(1.0,1.0,7,1.0,1.0),'anna':(0.93,0.88,8,0.94,0.9),
-'vb':(0.68,1.05,6,0.93,1.05),'peto':(0.80,1.08,5,1.04,1.08),'kollar':(0.63,0.9,9,0.88,0.9),'igor':(0.73,0.97,10,0.94,0.97),
-'otec':(0.67,0.94,6,0.9,0.95),'ondrej':(0.61,0.95,5,0.86,0.96),'zuzka':(1.05,1.06,3,1.0,1.05),'guard':(0.65,0.92,9,0.92,0.93),'gerti':(0.97,0.98,2,1.0,1.0)}
-def norm(t,lang):
-    t=t.replace('–',',').replace('—',',').replace('„','').replace('“','').replace('”','').replace('"','')
-    if lang=='sk':
-        for a,b in [('ŠtB','eštébé'),('VPN','vépéen'),('SNP','esenpé'),('ČSSR','čéeseser'),('VB','vébé'),('od 12:00 do 14:00','od dvanástej do štrnástej'),('22:00','dvadsaťdva nula nula'),('11:50','jedenásť päťdesiat'),('Grüß Gott','Grýs Got'),('Willkommen','Vilkomen'),('1988','tisícdeväťstoosemdesiatosem'),('1989','tisícdeväťstoosemdesiatdeväť')]: t=t.replace(a,b)
-    else:
-        for a,b in [('ŠtB','S T B'),('VPN','V P N'),('SNP','S N P'),('Peťo','Petyo'),('Mráz','Mraaz'),('Ján','Yaan'),('Jano','Yano'),('Hviezdoslav','Hvyezdoslav'),('Petržalka','Petrzhalka'),('Šťastný','Shtyastnee'),('Mikloško','Mikloshko'),('Krčméry','Krchmeri'),('Čalfa','Chalfa'),('Dubček','Doobcheck'),('Husák','Hoosaak'),('Václav','Vaatslav'),('Národní třída','Naarodnee Trzheeda'),('Národní','Naarodnee'),('Umelecká beseda','Oomeletska beseda'),('Európa','Europa'),('Ahoj','Ahoy')]: t=t.replace(a,b)
+# Slovenský dabing cez Microsoft Edge neurálne hlasy (balík edge-tts).
+#   node tools-export.mjs > lines.json
+#   python3 tools-voice.py lines.json                 # pregeneruje dist/voice/sk-*.mp3 + manifest
+#   python3 tools-voice.py lines.json --sample OUT k1 k2 …   # len ukážky vybraných replík
+# Angličtina (Kokoro) zostáva; v manifeste sa prepíšu len kľúče sk/*.
+import asyncio, edge_tts, edge_tts.communicate as C, inspect, textwrap, json, subprocess, os, sys, tempfile
+
+# edge-tts natvrdo žiada 48 kb/s – vyžiadame 96 kb/s (neurálny hlas je natívne 24 kHz).
+for n in dir(C.Communicate):
+    f = getattr(C.Communicate, n)
+    if callable(f) and 'stream' in n.lower() and 'outputFormat' in inspect.getsource(f):
+        s = textwrap.dedent(inspect.getsource(f)).replace('self.__', 'self._Communicate__') \
+            .replace('audio-24khz-48kbitrate-mono-mp3', 'audio-24khz-96kbitrate-mono-mp3')
+        g = C.__dict__.copy(); exec(s, g); setattr(C.Communicate, n, g[f.__name__])
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(ROOT, 'dist', 'voice'); MAN = os.path.join(ROOT, 'src', 'voice-manifest.json')
+M, F = 'sk-SK-LukasNeural', 'sk-SK-ViktoriaNeural'
+# who: (hlas, rýchlosť, výška) – len jemné rozdiely, max. ±10 %
+V = {'narrator': (M, '-6%', '-4Hz'), 'player': (M, '+0%', '+4Hz'), 'katka': (F, '+2%', '+0Hz'),
+     'anna': (F, '-9%', '-12Hz'), 'vb': (M, '+4%', '-6Hz'), 'peto': (M, '+8%', '+8Hz'),
+     'kollar': (M, '-8%', '-10Hz'), 'igor': (M, '-2%', '+0Hz'), 'otec': (M, '-4%', '-7Hz'),
+     'ondrej': (M, '-5%', '-11Hz'), 'zuzka': (F, '+6%', '+10Hz'), 'guard': (M, '-3%', '-8Hz'),
+     'gerti': (F, '-2%', '-4Hz')}
+
+def norm(t):
+    for a, b in [('„', ''), ('“', ''), ('”', ''), ('"', ''), ('ŠtB', 'eštébé'), ('VPN', 'vépéen'), ('SNP', 'esenpé'),
+                 ('ČSSR', 'čéeseser'), ('VB', 'vébé'), ('od 12:00 do 14:00', 'od dvanástej do štrnástej'),
+                 ('22:00', 'dvadsaťdva nula nula'), ('11:50', 'jedenásť päťdesiat'), ('Grüß Gott', 'Grýs Got'),
+                 ('Willkommen', 'Vilkomen')]:
+        t = t.replace(a, b)
     return t
-man={}
-for lang,tts in (('sk',sk),('en',en)):
+
+async def tts(text, who, mp3):
+    v, rate, pitch = V[who]
+    for i in range(4):
+        try: return await edge_tts.Communicate(norm(text), v, rate=rate, pitch=pitch).save(mp3)
+        except Exception as e:
+            if i == 3: raise
+            await asyncio.sleep(2 + i * 3)
+
+def ff(*a): subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', *a], check=True)
+def dur(p): return float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', p]))
+# 44,1 kHz, normalizovaná hlasitosť, 0,5 s ticha za replikou
+AF = 'aresample=44100,loudnorm=I=-16:TP=-1.5:LRA=11,apad=pad_dur=0.5'
+ENC = ['-c:a', 'libmp3lame', '-b:a', '96k', '-ar', '44100', '-ac', '1']
+
+async def main():
+    lines = json.load(open(sys.argv[1])); tmp = tempfile.mkdtemp()
+    if '--sample' in sys.argv:
+        i = sys.argv.index('--sample'); out = sys.argv[i + 1]; os.makedirs(out, exist_ok=True)
+        for k in sys.argv[i + 2:]:
+            l = next(x for x in lines if x['key'] == k)
+            await tts(l['sk'], l['who'], f'{tmp}/r.mp3'); ff('-i', f'{tmp}/r.mp3', '-af', AF, *ENC, f'{out}/{k}.mp3')
+            print(k, l['who'])
+        return
+    man = json.load(open(MAN)); man = {k: v for k, v in man.items() if not k.startswith('sk/')}
     for ch in dict.fromkeys(l['ch'] for l in lines):
-        segs=[];pos=0.0;lst=open(f'seg/{lang}-{ch}.txt','w')
-        for i,l in enumerate([x for x in lines if x['ch']==ch]):
-            v=V[l['who']]
-            if lang=='sk': a=tts.generate(norm(l['sk'],'sk'),sid=0,speed=v[1]); pitch=v[0]
-            else: a=tts.generate(norm(l['en'],'en'),sid=v[2],speed=v[4]); pitch=v[3]
-            x=np.array(a.samples,dtype=np.float32); raw=f'seg/{lang}-{ch}-{i}r.wav'; fin=f'seg/{lang}-{ch}-{i}.wav'
-            sf.write(raw,x,a.sample_rate)
-            af=(f'rubberband=pitch={pitch}:formant=shifted,' if abs(pitch-1)>0.01 else '')+'aresample=24000,loudnorm=I=-18:TP=-2,apad=pad_dur=0.5'
-            subprocess.run(['ffmpeg','-y','-loglevel','error','-i',raw,'-af',af,'-ar','24000','-ac','1',fin],check=True)
-            dur=sf.info(fin).duration
-            man[f"{lang}/{l['key']}"]=[f'{lang}-{ch}.mp3',round(pos,3),round(dur-0.45,3)]
-            pos+=dur; lst.write(f"file '{os.path.abspath(fin)}'\n")
-        lst.close()
-        subprocess.run(['ffmpeg','-y','-loglevel','error','-f','concat','-safe','0','-i',f'seg/{lang}-{ch}.txt','-c:a','libmp3lame','-b:a','48k','-ar','24000','-ac','1',f'{OUT}/{lang}-{ch}.mp3'],check=True)
-        print(lang,ch,round(pos),flush=True)
-json.dump(man,open('/home/user/Game/src/voice-manifest.json','w'))
-print('DONE')
+        pos = 0.0; lst = []
+        for i, l in enumerate(x for x in lines if x['ch'] == ch):
+            raw, wav = f'{tmp}/{ch}-{i}.mp3', f'{tmp}/{ch}-{i}.wav'
+            await tts(l['sk'], l['who'], raw); ff('-i', raw, '-af', AF, '-ar', '44100', '-ac', '1', wav)
+            d = dur(wav); man[f"sk/{l['key']}"] = [f'sk-{ch}.mp3', round(pos, 3), round(d - 0.45, 3)]
+            pos += d; lst.append(f"file '{wav}'")
+        open(f'{tmp}/{ch}.txt', 'w').write('\n'.join(lst))
+        ff('-f', 'concat', '-safe', '0', '-i', f'{tmp}/{ch}.txt', *ENC, f'{OUT}/sk-{ch}.mp3')
+        print('sk', ch, round(pos), flush=True)
+    json.dump(man, open(MAN, 'w'))
+    print('DONE')
+
+asyncio.run(main())
