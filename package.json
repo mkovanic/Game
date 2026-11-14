@@ -1,0 +1,25 @@
+{
+  "name": "sviecky-a-kluce",
+  "version": "1.0.0",
+  "description": "3D príbehová hra z Nežnej revolúcie (Slovensko 1988–1989) – Candles and Keys",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mkovanic/Game.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mkovanic/Game/issues"
+  },
+  "homepage": "https://github.com/mkovanic/Game#readme",
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "type": "module",
+  "private": true
+}
