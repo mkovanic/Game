@@ -1,233 +1,314 @@
-// Skutočné rigované 3D postavy s motion-capture animáciami (modely z projektu three.js, pôvod Mixamo).
-// Xbot = civilisti (prefarbení podľa častí tela + vlasy, čiapky, šály), Soldier = uniformované zložky.
+// Realistické rigované postavy Microsoft Rocketbox (MIT) s motion-capture animáciami.
+// Modely a animácie pripravuje tools/people.sh (Blender + gltf-transform) do assets/people.
+// Oblečenie sa prefarbuje v shaderi podľa časti tela (kabát / nohavice / topánky) – zimné tmavé tóny.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as skClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import xbotBin from '../assets/Xbot.glb';
-import soldierBin from '../assets/Soldier.glb';
+import { MODEL_BINS, ANIM_BINS, CROWD_MODELS, CROWD_WALKERS } from './people-assets.js';
 
-let xbot = null, soldier = null, baked = null;
-const parse = (bin) => new Promise((res, rej) => new GLTFLoader().parse(bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength), '', res, rej));
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const parse = (bin) => new Promise((res, rej) => loader.parse(bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength), '', res, rej));
+// postavy, ktoré už majú pokrývku hlavy (čiapka, prilba) – nepridávame ďalšiu
+const HAS_HAT = /Police|Military|Construction/;
+
+const models = {}, anims = { m: {}, f: {} };
+let baked = null;
 
 export async function initPeople() {
-  [xbot, soldier] = await Promise.all([parse(xbotBin), parse(soldierBin)]);
-  xbot.scene.traverse((o) => { if (o.isSkinnedMesh) classify(o); });
+  const names = Object.keys(MODEL_BINS);
+  const [gm, ga] = await Promise.all([
+    Promise.all(names.map((n) => parse(MODEL_BINS[n]))),
+    Promise.all(Object.keys(ANIM_BINS).map((k) => parse(ANIM_BINS[k]).then((g) => [k, g]))),
+  ]);
+  for (const [k, g] of ga) {
+    const [s, n] = k.split('-'), clip = g.animations[0];
+    const t = clip.tracks.find((t) => t.name === 'Bip01.position');
+    anims[s][n] = { clip, hip: t ? t.values[1] : 0.9 };
+  }
+  names.forEach((n, i) => (models[n] = prepModel(n, gm[i])));
   baked = bakeCrowd();
 }
-export const peopleReady = () => !!xbot;
+export const peopleReady = () => !!baked;
 
-// časť tela podľa dominantnej kosti: 0 = kabát, 1 = pokožka, 2 = nohavice, 3 = topánky
-function classify(mesh) {
-  const g = mesh.geometry, si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
-  const names = mesh.skeleton.bones.map((b) => b.name.replace('mixamorig:', ''));
-  const part = new Float32Array(si.count);
+
+// ───────────────────────────── príprava modelu ─────────────────────────────
+// aPart: 0 = kabát/trup a ruky, 1 = dlane, 2 = nohavice, 3 = topánky, 4 = hlava/vlasy/výstroj (bez zmeny)
+function prepModel(name, gltf) {
+  const scene = gltf.scene;
+  scene.updateMatrixWorld(true);
+  let mesh = null;
+  scene.traverse((o) => { if (o.isSkinnedMesh) mesh = o; });
+  const g = mesh.geometry, mat = mesh.material;
+  const img = mat.map.image, bodyU = img.height / img.width;
+  const si = g.attributes.skinIndex, sw = g.attributes.skinWeight, uv = g.attributes.uv;
   const pos = g.attributes.position, nor = g.attributes.normal;
+  const bones = mesh.skeleton.bones.map((b) => b.name);
+  const part = new Float32Array(si.count);
+  // kľudová póza vo svete (siete sú kvantované, preto cez applyBoneTransform)
+  const v = new THREE.Vector3(), headPts = [], world = (i) => mesh.applyBoneTransform(i, v.fromBufferAttribute(pos, i)).applyMatrix4(mesh.matrixWorld).clone();
+  let lo = 0, hi = 0;
+  for (let i = 1; i < si.count; i++) { if (pos.getY(i) < pos.getY(lo)) lo = i; if (pos.getY(i) > pos.getY(hi)) hi = i; }
+  const unit = world(lo).distanceTo(world(hi)) / v.fromBufferAttribute(pos, lo).distanceTo(new THREE.Vector3().fromBufferAttribute(pos, hi));
+  const puff = 0.014 / unit; // zimné oblečenie – trup a ruky trochu „nafúkneme“
   for (let i = 0; i < si.count; i++) {
     let best = 0, bw = -1;
     for (let k = 0; k < 4; k++) { const w = sw.getComponent(i, k); if (w > bw) { bw = w; best = si.getComponent(i, k); } }
-    const n = names[best];
-    let p = 0;
-    if (/Head|Neck/.test(n)) p = 1;
-    else if (/Hand/.test(n)) p = 1;
-    else if (/Foot|Toe/.test(n)) p = 3;
-    else if (/Leg/.test(n)) p = 2;
+    const n = bones[best];
+    let p = 4;
+    if (uv.getX(i) < bodyU) {
+      if (/Head|Neck/.test(n)) p = 4;
+      else if (/Hand|Finger/.test(n)) p = 1;
+      else if (/Foot|Toe/.test(n)) p = 3;
+      else if (/Thigh|Calf/.test(n)) p = 2;
+      else p = 0;
+    }
     part[i] = p;
-    // zimné oblečenie – trup a ruky trochu „nafúkneme“
-    const k = p === 0 ? 0.022 : p === 2 ? 0.008 : 0;
-    if (k) pos.setXYZ(i, pos.getX(i) + nor.getX(i) * k, pos.getY(i) + nor.getY(i) * k, pos.getZ(i) + nor.getZ(i) * k);
+    if (/Head/.test(n)) headPts.push(world(i));
+    if (p === 0) pos.setXYZ(i, pos.getX(i) + nor.getX(i) * puff, pos.getY(i) + nor.getY(i) * puff, pos.getZ(i) + nor.getZ(i) * puff);
   }
-  g.userData.part = part;
+  g.setAttribute('aPart', new THREE.BufferAttribute(part, 1));
+  g.computeBoundingSphere();
+  const bone = (re) => mesh.skeleton.bones.find((b) => re.test(b.name));
+  const head = bone(/_Head$/), hp = new THREE.Vector3(); head.getWorldPosition(hp);
+  // rozmery hlavy (pre čiapky a šatky) v metroch, relatívne ku kosti hlavy
+  const box = new THREE.Box3().setFromPoints(headPts);
+  mat.alphaTest = 0.5; mat.transparent = false; mat.depthWrite = true; mat.side = THREE.FrontSide;
+  mat.roughness = 0.85; mat.metalness = 0;
+  return {
+    name, scene, mat, f: /Female/.test(name) ? 'f' : 'm', clips: {},
+    headTop: box.max.y - hp.y, headR: Math.max(box.max.x - box.min.x, box.max.z - box.min.z) / 2,
+    headZ: (box.max.z + box.min.z) / 2 - hp.z, hip: scene.getObjectByName('Bip01').position.y,
+  };
 }
 
-function colorize(geo, look) {
-  const part = geo.userData.part, n = part.length;
-  const cols = [look.coat ?? 0x3a4250, look.skin ?? 0xd9ad8f, look.pants ?? 0x23252b, 0x141210].map((c) => new THREE.Color(c));
-  const a = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) { const c = cols[part[i]]; a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
-  geo.setAttribute('color', new THREE.BufferAttribute(a, 3));
+// klip z animácie pre daný model: rotácie kostí + posun panvy prepočítaný na výšku postavy
+function clipFor(M, name) {
+  if (M.clips[name]) return M.clips[name];
+  const A = anims[M.f][name] || anims.m[name];
+  const k = M.hip / A.hip;
+  const tracks = [];
+  for (const t of A.clip.tracks) {
+    if (t.name.endsWith('.position')) {
+      if (t.name !== 'Bip01.position') { tracks.push(t); continue; }
+      const tr = t.clone(), v = tr.values, n = v.length / 3;
+      const d = [v[v.length - 3] - v[0], v[v.length - 2] - v[1], v[v.length - 1] - v[2]];
+      for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) v[i * 3 + c] = (v[i * 3 + c] - (name === 'walk' ? d[c] * i / (n - 1) : 0)) * k;
+      tracks.push(tr);
+    } else tracks.push(t);
+  }
+  return (M.clips[name] = new THREE.AnimationClip(name, A.clip.duration, tracks));
+}
+
+function tintMaterial(base, coat, pants, amount) {
+  const m = base.clone();
+  m.userData.u = { uCoat: { value: new THREE.Color(coat) }, uPants: { value: new THREE.Color(pants) }, uTint: { value: amount } };
+  m.onBeforeCompile = (s) => {
+    Object.assign(s.uniforms, m.userData.u);
+    s.vertexShader = 'attribute float aPart;\nvarying float vPart;\n' + s.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n  vPart = aPart;');
+    s.fragmentShader = 'uniform vec3 uCoat, uPants;\nuniform float uTint;\nvarying float vPart;\n' + s.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+  {
+    float l = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+    if (vPart < 0.5) diffuseColor.rgb = mix(diffuseColor.rgb, uCoat * (0.3 + 1.6 * l), uTint);
+    else if (vPart > 1.5 && vPart < 2.5) diffuseColor.rgb = mix(diffuseColor.rgb, uPants * (0.3 + 1.6 * l), uTint * 0.8);
+    else if (vPart > 2.5 && vPart < 3.5) diffuseColor.rgb *= 0.55;
+  }`);
+  };
+  m.customProgramCacheKey = () => 'tint';
+  return m;
 }
 
 const stdm = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, ...o });
 
-function headgear(look, hh) {
-  // hh = výška hlavy v metroch; skupina je v metroch, počiatok v kosti hlavy
+// pokrývky hlavy: skupina so stredom v kosti hlavy, osi ako svet (Y hore, Z dopredu)
+function headgear(look, M) {
   const g = new THREE.Group();
-  const cy = hh * 0.56, r = hh * 0.67;
-  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
-  const hair = stdm(look.hair ?? 0x3a2a1a, { roughness: 0.95 });
+  const r = 0.108, top = M.headTop - 0.045, cy = top - r, z0 = M.headZ;
+  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z + z0); m.castShadow = true; g.add(m); return m; };
   const hc = stdm(look.hatColor ?? 0x222222);
-  if (look.hat !== 'scarf') {
-    const h = add(new THREE.SphereGeometry(r, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.58), hair, 0, cy + 0.012, -0.012);
-    h.scale.set(1, 1.02, 1.1);
-    if (look.long) { const b = add(new THREE.SphereGeometry(r * 0.98, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.8), hair, 0, cy - 0.02, -0.035); b.scale.set(1.02, 1.15, 0.9); }
-  }
   switch (look.hat) {
-    case 'beret': { const b = add(new THREE.CylinderGeometry(r * 1.2, r * 1.05, 0.045, 18), hc, 0.015, cy + r * 0.78, -0.01); b.rotation.z = -0.18; break; }
+    case 'beret': { const b = add(new THREE.CylinderGeometry(r * 1.15, r * 1.0, 0.04, 18), hc, 0.012, top - 0.012, -0.01); b.rotation.z = -0.18; break; }
     case 'fedora':
-      add(new THREE.CylinderGeometry(r * 1.6, r * 1.6, 0.014, 22), hc, 0, cy + r * 0.55, 0.01);
-      add(new THREE.CylinderGeometry(r * 0.92, r * 1.02, 0.11, 18), hc, 0, cy + r * 0.55 + 0.06, 0);
+      add(new THREE.CylinderGeometry(r * 1.55, r * 1.55, 0.012, 22), hc, 0, top - 0.035, 0);
+      add(new THREE.CylinderGeometry(r * 0.9, r * 1.0, 0.1, 18), hc, 0, top + 0.012, 0);
       break;
     case 'cap':
-      add(new THREE.CylinderGeometry(r * 1.04, r * 1.06, 0.06, 18), hc, 0, cy + r * 0.72, -0.005);
-      add(new THREE.BoxGeometry(r * 1.5, 0.012, 0.08), hc, 0, cy + r * 0.6, r * 1.02);
+      add(new THREE.CylinderGeometry(r * 1.0, r * 1.04, 0.06, 18), hc, 0, top - 0.018, -0.005);
+      add(new THREE.BoxGeometry(r * 1.4, 0.012, 0.07), hc, 0, top - 0.04, r * 0.98);
       break;
+    case 'ushanka': {
+      const s = add(new THREE.SphereGeometry(r * 1.12, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), hc, 0, cy + r * 0.35, -0.005);
+      s.scale.set(1, 0.9, 1.05);
+      break;
+    }
     case 'scarf': {
-      const s = add(new THREE.SphereGeometry(r * 1.07, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.68), hc, 0, cy + 0.005, -0.018);
-      s.scale.set(1, 1.05, 1.08);
-      add(new THREE.SphereGeometry(r * 0.5, 10, 8), hc, 0, cy - r * 1.05, r * 0.5);
+      const s = add(new THREE.SphereGeometry(r * 1.1, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.62), hc, 0, cy + 0.004, -0.012);
+      s.scale.set(1, 1.08, 1.1);
+      add(new THREE.SphereGeometry(r * 0.42, 10, 8), hc, 0, cy - r * 1.05, r * 0.45);
       break;
     }
   }
   return g;
 }
 
+// pripojí objekt ku kosti tak, aby v kľudovej póze ležal na mieste `at` (svet) s osami sveta
+function attach(bone, obj, at) {
+  bone.updateWorldMatrix(true, false);
+  const m = new THREE.Matrix4().makeTranslation(at.x, at.y, at.z);
+  m.premultiply(new THREE.Matrix4().copy(bone.matrixWorld).invert());
+  m.decompose(obj.position, obj.quaternion, obj.scale);
+  bone.add(obj);
+}
+
 export function makeCharacter(look = {}) {
-  const uniform = look.hat === 'police' || look.hat === 'ushanka';
-  const src = uniform ? soldier : xbot;
-  const inner = skClone(src.scene);
+  const M = models[look.model] || models.Male_Adult_03;
+  const inner = skClone(M.scene);
   const root = new THREE.Group();
   root.add(inner);
-  if (uniform) inner.rotation.y = Math.PI; // Soldier je otočený chrbtom
-  let head = null, spine = null, handR = null;
+  const mat = tintMaterial(M.mat, look.coat ?? 0x3a4250, look.pants ?? 0x23252b, look.coat != null ? (look.tint ?? 0.7) : 0);
+  const B = {};
   inner.traverse((o) => {
-    if (o.isSkinnedMesh) {
-      o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
-      if (!uniform) {
-        const g = o.geometry.clone(); g.userData.part = o.geometry.userData.part;
-        colorize(g, look);
-        o.geometry = g;
-        o.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82 });
-      } else {
-        o.material = o.material.clone();
-        o.material.color.set(look.hat === 'ushanka' ? 0xb8c0a0 : 0xa8b4a0);
-      }
-    }
-    if (o.isBone) {
-      if (o.name === 'mixamorigHead' || o.name === 'mixamorig:Head') head = o;
-      if (/Spine2$/.test(o.name)) spine = o;
-      if (/RightHand$/.test(o.name)) handR = o;
-    }
+    if (o.isSkinnedMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.material = mat; }
+    if (o.isBone) B[o.name.replace('Bip01_', '')] = o;
   });
   root.updateMatrixWorld(true);
-  const ws = new THREE.Vector3();
-  if (head && !uniform) {
-    head.getWorldScale(ws);
-    const top = head.children.find((c) => /HeadTop/.test(c.name));
-    const hh = (top ? top.position.length() : 18) * ws.y;
-    const hg = headgear(look, hh);
-    hg.scale.setScalar(1 / ws.y);
-    head.add(hg);
-  }
-  if (spine && look.scarf && !uniform) {
-    spine.getWorldScale(ws);
-    const s = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.035, 8, 18), stdm(look.scarf, { roughness: 1 }));
-    s.rotation.x = Math.PI / 2; s.scale.setScalar(1 / ws.y); s.position.set(0, 0.155 / ws.y, 0.02 / ws.y);
-    spine.add(s);
+  const head = B.Head, wp = (b) => b.getWorldPosition(new THREE.Vector3());
+  const hp = wp(head);
+  if (!HAS_HAT.test(M.name) && look.hat && look.hat !== 'none' && look.hat !== 'police') attach(head, headgear(look, M), hp);
+  if (look.scarf) {
+    const s = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.034, 8, 18), stdm(look.scarf, { roughness: 1 }));
+    s.rotation.x = Math.PI / 2; s.castShadow = true;
+    const n = wp(B.Neck); n.y -= 0.012; n.z += 0.018;
+    attach(B.Neck, s, n);
   }
   let flame = null;
-  if (look.candle && handR) {
-    handR.getWorldScale(ws);
+  if (look.candle && B.R_Hand) {
     const c = new THREE.Group();
-    c.scale.setScalar(1 / ws.y);
-    const wq = new THREE.Quaternion(); handR.getWorldQuaternion(wq); c.quaternion.copy(wq.invert()); // sviečka vždy zvislo
-    c.position.set(0, 0.08 / ws.y, 0.03 / ws.y);
     c.add(new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.2, 8), stdm(0xf3ecd8)));
     flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: look.glow, color: 0xffb04a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     flame.position.y = 0.15; flame.scale.setScalar(0.2);
     c.add(flame);
     const L = new THREE.PointLight(0xffa040, 1.2, 4, 1.5); L.position.y = 0.2; c.add(L);
-    handR.add(c);
+    const h = wp(B.R_Hand), f = B.R_Finger2 ? wp(B.R_Finger2) : h.clone();
+    attach(B.R_Hand, c, h.lerp(f, 0.7).add(new THREE.Vector3(0, 0.02, 0)));
   }
   const mixer = new THREE.AnimationMixer(inner);
-  const clip = src.animations.find((a) => /^idle$/i.test(a.name));
-  const act = mixer.clipAction(clip); act.play(); act.time = Math.random() * clip.duration;
+  const idle = mixer.clipAction(clipFor(M, look.idle || (Math.random() < 0.5 ? 'idle' : 'idle3')));
+  const talk = mixer.clipAction(clipFor(M, 'talk'));
+  idle.play(); idle.time = Math.random() * idle.getClip().duration;
   mixer.update(0);
-  let hy = 0;
+  // osi hlavy (svet hore / bok) v lokálnom priestore kosti – na otáčanie za hráčom a kývanie pri reči
+  const iq = head.getWorldQuaternion(new THREE.Quaternion()).invert();
+  const upL = new THREE.Vector3(0, 1, 0).applyQuaternion(iq), sideL = new THREE.Vector3(1, 0, 0).applyQuaternion(iq);
+  let hy = 0, speaking = false;
   root.userData = {
     flame,
     // dt, cieľové natočenie hlavy (rad), či postava práve hovorí
     tick(dt, yaw, talking, t) {
+      if (talking !== speaking) {
+        speaking = talking;
+        const [a, b] = talking ? [idle, talk] : [talk, idle];
+        b.reset().play(); a.crossFadeTo(b, 0.5, false);
+      }
       mixer.update(dt);
       hy += (yaw - hy) * Math.min(1, dt * 4);
-      if (head) { head.rotateY(uniform ? hy : hy); if (talking) head.rotateX(Math.sin(t * 7) * 0.035 + Math.sin(t * 2.3) * 0.03); }
+      head.rotateOnAxis(upL, hy);
+      if (talking) head.rotateOnAxis(sideL, Math.sin(t * 7) * 0.03 + Math.sin(t * 2.3) * 0.025);
     },
   };
   return root;
 }
 
 // ───────────────────────────── dav: „zapečené“ pózy ─────────────────────────────
+// Pre každý model davu: blízka úroveň = plná sieť s textúrou, vzdialená = zhlukovanie vrcholov.
 function bakeCrowd() {
-  const inst = skClone(xbot.scene);
-  const holder = new THREE.Group(); holder.add(inst);
-  const meshes = []; let headBone = null;
-  inst.traverse((o) => { if (o.isSkinnedMesh) meshes.push(o); if (o.isBone && /:?Head$/.test(o.name)) headBone = o; });
-  // priradíme časti tela (klon zdieľa geometriu s originálom)
-  const makeMaps = (CELL) => meshes.map((m) => {
-    const pos = m.geometry.attributes.position, part = m.geometry.userData.part;
-    const key = new Map(), rep = [], remap = new Int32Array(pos.count);
-    for (let i = 0; i < pos.count; i++) {
-      const c = part[i] === 1 ? CELL * 0.7 : CELL; // hlavu a ruky necháme jemnejšie
-      const k = `${Math.round(pos.getX(i) / c)},${Math.round(pos.getY(i) / c)},${Math.round(pos.getZ(i) / c)},${part[i]}`;
+  const v = new THREE.Vector3();
+  const out = { models: [] };
+  for (const name of CROWD_MODELS) {
+    const M = models[name];
+    const inst = skClone(M.scene);
+    const holder = new THREE.Group(); holder.add(inst);
+    let mesh = null, head = null;
+    inst.traverse((o) => { if (o.isSkinnedMesh) mesh = o; if (o.isBone && /_Head$/.test(o.name)) head = o; });
+    const G = mesh.geometry, pos = G.attributes.position, part = G.attributes.aPart, uv = G.attributes.uv, N = pos.count;
+    // vzdialená úroveň: zhlukovanie vrcholov do mriežky (hlava a ruky jemnejšie)
+    const CELL = 0.085, key = new Map(), rep = [], remap = new Int32Array(N);
+    holder.updateMatrixWorld(true);
+    for (let i = 0; i < N; i++) {
+      mesh.applyBoneTransform(i, v.fromBufferAttribute(pos, i)).applyMatrix4(mesh.matrixWorld); // kľudová póza v metroch
+      const p = part.getX(i), c = p === 4 || p === 1 ? CELL * 0.7 : CELL;
+      const k = `${Math.round(v.x / c)},${Math.round(v.y / c)},${Math.round(v.z / c)},${p}`;
       let r = key.get(k);
       if (r === undefined) { r = rep.length; key.set(k, r); rep.push(i); }
       remap[i] = r;
     }
-    const idx = m.geometry.index.array, out = [];
+    // poradie vrcholov po zapečení do sveta overíme znamienkom objemu (kvantovanie/zrkadlenie ho môže obrátiť)
+    let idx = G.index.array, vol = 0;
+    const R = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) { mesh.applyBoneTransform(i, v.fromBufferAttribute(pos, i)).applyMatrix4(mesh.matrixWorld); R[i * 3] = v.x; R[i * 3 + 1] = v.y; R[i * 3 + 2] = v.z; }
+    for (let i = 0; i < idx.length; i += 3) {
+      const a = idx[i] * 3, b = idx[i + 1] * 3, c = idx[i + 2] * 3;
+      vol += R[a] * (R[b + 1] * R[c + 2] - R[b + 2] * R[c + 1]) + R[a + 1] * (R[b + 2] * R[c] - R[b] * R[c + 2]) + R[a + 2] * (R[b] * R[c + 1] - R[b + 1] * R[c]);
+    }
+    if (vol < 0) { idx = idx.slice(); for (let i = 0; i < idx.length; i += 3) { const t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; } }
+    const hiIdx = new THREE.BufferAttribute(idx, 1), loIdx = [];
     for (let i = 0; i < idx.length; i += 3) {
       const a = remap[idx[i]], b = remap[idx[i + 1]], c = remap[idx[i + 2]];
-      if (a !== b && b !== c && a !== c) out.push(a, b, c);
+      if (a !== b && b !== c && a !== c) loIdx.push(a, b, c);
     }
-    return { m, rep, tris: out, part };
-  });
-  const SKIN = new THREE.Color(0xd9ad8f), PANTS = new THREE.Color(0x22242a), SHOE = new THREE.Color(0x121010);
-  const v = new THREE.Vector3();
-  const mixer = new THREE.AnimationMixer(inst);
-  const HI = makeMaps(0.03), LO = makeMaps(0.085);
-  const pose = (clipName, time, maps) => {
-    mixer.stopAllAction();
-    const clip = xbot.animations.find((a) => a.name === clipName);
-    const act = mixer.clipAction(clip); act.play(); mixer.setTime(time * clip.duration);
-    holder.updateMatrixWorld(true);
-    const P = [], C = [], A = [], I = [];
-    let base = 0;
-    for (const { m, rep, tris, part } of maps) {
-      m.skeleton.update();
-      const pos = m.geometry.attributes.position;
-      for (const i of rep) {
-        v.fromBufferAttribute(pos, i); m.applyBoneTransform(i, v); v.applyMatrix4(m.matrixWorld);
-        P.push(v.x, v.y, v.z);
-        const p = part[i];
-        const c = p === 1 ? SKIN : p === 2 ? PANTS : p === 3 ? SHOE : null;
-        if (c) C.push(c.r, c.g, c.b); else C.push(1, 1, 1);
-        A.push(p);
-      }
-      for (const t of tris) I.push(t + base);
-      base += rep.length;
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
-    g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
-    g.setAttribute('aPart', new THREE.Float32BufferAttribute(A, 1));
-    g.setIndex(I);
-    g.computeVertexNormals();
-    // posun, aby postava stála v počiatku (XZ) – a pozícia hlavy pre čiapky
-    const hp = new THREE.Vector3(); headBone.getWorldPosition(hp);
-    g.userData.head = hp;
-    return g;
-  };
-  const out = {
-    idle: [['idle', 0.05], ['idle', 0.4], ['idle', 0.75], ['sad_pose', 0]].map(([c, t]) => ({ hi: pose(c, t, HI), lo: pose(c, t, LO) })),
-    walk: Array.from({ length: 8 }, (_, i) => ({ hi: pose('walk', i / 8, HI), lo: pose('walk', i / 8, LO) })),
-  };
-  out.tris = [out.idle[0].hi.index.count / 3, out.idle[0].lo.index.count / 3];
+    const loUv = new Float32Array(rep.length * 2), loPart = new Float32Array(rep.length);
+    rep.forEach((i, j) => { loUv[j * 2] = uv.getX(i); loUv[j * 2 + 1] = uv.getY(i); loPart[j] = part.getX(i); });
+    const mixer = new THREE.AnimationMixer(inst);
+    const pose = (clip, time) => {
+      mixer.stopAllAction();
+      const c = clipFor(M, clip), act = mixer.clipAction(c); act.play(); mixer.setTime(time * c.duration);
+      holder.updateMatrixWorld(true); mesh.skeleton.update();
+      const P = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) { v.fromBufferAttribute(pos, i); mesh.applyBoneTransform(i, v); v.applyMatrix4(mesh.matrixWorld); P[i * 3] = v.x; P[i * 3 + 1] = v.y; P[i * 3 + 2] = v.z; }
+      const hi = new THREE.BufferGeometry();
+      hi.setAttribute('position', new THREE.BufferAttribute(P, 3));
+      hi.setAttribute('uv', uv); hi.setAttribute('aPart', part); hi.setIndex(hiIdx);
+      hi.computeVertexNormals();
+      const LP = new Float32Array(rep.length * 3);
+      rep.forEach((i, j) => LP.set(P.subarray(i * 3, i * 3 + 3), j * 3));
+      const lo = new THREE.BufferGeometry();
+      lo.setAttribute('position', new THREE.BufferAttribute(LP, 3));
+      lo.setAttribute('uv', new THREE.BufferAttribute(loUv, 2)); lo.setAttribute('aPart', new THREE.BufferAttribute(loPart, 1));
+      lo.setIndex(loIdx); lo.computeVertexNormals();
+      const hp = new THREE.Vector3(); head.getWorldPosition(hp);
+      hi.userData.head = hp;
+      return { hi, lo };
+    };
+    const walk = CROWD_WALKERS.includes(name);
+    out.models.push({
+      name, mat: crowdMaterial(M.mat), headTop: M.headTop, noHat: HAS_HAT.test(name),
+      idle: [pose('idle', 0.15), pose('idle2', 0.55), pose('crouch', 0.5)],
+      walk: walk ? Array.from({ length: 8 }, (_, i) => pose('walk', i / 8)) : null,
+    });
+  }
+  out.tris = [out.models[0].idle[0].hi.index.count / 3, out.models[0].idle[0].lo.index.count / 3];
   return out;
 }
 export const crowdPoses = () => baked;
 
-export function crowdMaterial() {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88 });
+// farba inštancie = jemný odtieň kabáta
+function crowdMaterial(base) {
+  const m = base.clone();
   m.onBeforeCompile = (s) => {
-    s.vertexShader = 'attribute float aPart;\n' + s.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n  if (aPart > 0.5) vColor.rgb = color.rgb;');
+    s.vertexShader = 'attribute float aPart;\nvarying float vPart;\n' + s.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n  vPart = aPart;');
+    s.fragmentShader = 'varying float vPart;\n' + s.fragmentShader
+      .replace('#include <color_fragment>', '')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+  {
+    float l = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+  #ifdef USE_COLOR
+    if (vPart < 0.5) diffuseColor.rgb = mix(diffuseColor.rgb, vColor * (0.3 + 1.6 * l), 0.6);
+  #endif
+    if (vPart > 1.5 && vPart < 2.5) diffuseColor.rgb *= 0.7;
+    else if (vPart > 2.5 && vPart < 3.5) diffuseColor.rgb *= 0.55;
+  }`);
   };
+  m.customProgramCacheKey = () => 'crowd';
   return m;
 }
+export const peopleDebug = { models, anims };

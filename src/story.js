@@ -31,17 +31,17 @@ export const CHAPTERS = [
     npcs: [
       {
         id: 'anna', name: { sk: 'Pani Anna', en: 'Mrs Anna' }, pos: [3.5, 20],
-        look: { coat: 0x3b3550, pants: 0x2a2a2a, hair: 0xb8b8b8, hat: 'scarf', hatColor: 0x6b2a3a, candle: true },
+        look: { model: 'Business_Female_03', coat: 0x3b3550, pants: 0x2a2a2a, hair: 0xb8b8b8, hat: 'scarf', hatColor: 0x6b2a3a, candle: true },
         voice: { g: 'f', pitch: 0.95, rate: 0.88 }, start: 'a1', after: 'a_after', required: true,
       },
       {
         id: 'vb', name: { sk: 'Príslušník VB', en: 'Police officer' }, pos: [-10.5, 26],
-        look: { coat: 0x4a5a3e, pants: 0x3a4632, hat: 'police', hatColor: 0x3d4a33 },
+        look: { model: 'Police_Male_03', coat: 0x4a5a3e, pants: 0x3a4632, hat: 'police', hatColor: 0x3d4a33 },
         voice: { g: 'm', pitch: 0.75, rate: 1.05 }, start: 'p1', after: 'p_after', required: true,
       },
       {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [2.6, -7],
-        look: { coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, candle: true },
+        look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, candle: true },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],
@@ -102,17 +102,17 @@ export const CHAPTERS = [
     npcs: [
       {
         id: 'peto', name: { sk: 'Peťo', en: 'Peťo' }, pos: [5, 8],
-        look: { coat: 0x2f4f6f, pants: 0x3a3a3a, hair: 0x1a1a1a, hat: 'none', scarf: 0xb22222 },
+        look: { model: 'Male_Adult_12', coat: 0x2f4f6f, pants: 0x3a3a3a, hair: 0x1a1a1a, hat: 'none', scarf: 0xb22222 },
         voice: { g: 'm', pitch: 1.15, rate: 1.08 }, start: 's1', after: 's_after', required: true,
       },
       {
         id: 'kollar', name: { sk: 'Muž v koženom kabáte', en: 'Man in a leather coat' }, pos: [-14, 18],
-        look: { coat: 0x1c1a18, pants: 0x262626, hair: 0x2a2a2a, hat: 'fedora', hatColor: 0x222222 },
+        look: { model: 'Business_Male_03', coat: 0x1c1a18, pants: 0x262626, hair: 0x2a2a2a, hat: 'fedora', hatColor: 0x222222 },
         voice: { g: 'm', pitch: 0.7, rate: 0.92 }, start: 'e1', after: 'e_after', required: true,
       },
       {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [0, -6],
-        look: { coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
+        look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],
@@ -177,17 +177,17 @@ export const CHAPTERS = [
     npcs: [
       {
         id: 'igor', name: { sk: 'Herec Igor', en: 'Igor, actor' }, pos: [-7, 22],
-        look: { coat: 0x5b2a2a, pants: 0x222222, hair: 0x6b5a4a, hat: 'none', scarf: 0x1f5faa },
+        look: { model: 'Male_Adult_07', coat: 0x5b2a2a, pants: 0x222222, hair: 0x6b5a4a, hat: 'none', scarf: 0x1f5faa },
         voice: { g: 'm', pitch: 0.95, rate: 0.98 }, start: 'i1', after: 'i_after', required: true,
       },
       {
         id: 'otec', name: { sk: 'Otec', en: 'Dad' }, pos: [8, 18],
-        look: { coat: 0x46413a, pants: 0x2a2a2a, hair: 0x6a6a6a, hat: 'cap', hatColor: 0x353535 },
+        look: { model: 'Male_Adult_03', coat: 0x46413a, pants: 0x2a2a2a, hair: 0x6a6a6a, hat: 'cap', hatColor: 0x353535 },
         voice: { g: 'm', pitch: 0.8, rate: 0.95 }, start: 'o1', after: 'o_after', required: true,
       },
       {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [3, -24],
-        look: { coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
+        look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],
@@ -252,17 +252,17 @@ export const CHAPTERS = [
     npcs: [
       {
         id: 'ondrej', name: { sk: 'Majster Ondrej', en: 'Foreman Ondrej' }, pos: [-9, 4],
-        look: { coat: 0x2b3f63, pants: 0x2b3f63, hair: 0x555555, hat: 'cap', hatColor: 0x2b3f63 },
+        look: { model: 'Construction_Male_02', coat: 0x2b3f63, pants: 0x2b3f63, hair: 0x555555, hat: 'cap', hatColor: 0x2b3f63 },
         voice: { g: 'm', pitch: 0.72, rate: 0.95 }, start: 'n1', after: 'n_after', required: true,
       },
       {
         id: 'zuzka', name: { sk: 'Zuzka z dielne', en: 'Zuzka from the workshop' }, pos: [9, 0],
-        look: { coat: 0x7a8a9a, pants: 0x3a4a5a, hair: 0x8a5a2a, hat: 'scarf', hatColor: 0xc0392b },
+        look: { model: 'Female_Adult_15', coat: 0x7a8a9a, pants: 0x3a4a5a, hair: 0x8a5a2a, hat: 'scarf', hatColor: 0xc0392b },
         voice: { g: 'f', pitch: 1.05, rate: 1.05 }, start: 'z1', after: 'z_after', required: true,
       },
       {
         id: 'otec', name: { sk: 'Otec', en: 'Dad' }, pos: [0, -15],
-        look: { coat: 0x2b3f63, pants: 0x2b3f63, hair: 0x6a6a6a, hat: 'cap', hatColor: 0x353535 },
+        look: { model: 'Male_Adult_03', coat: 0x2b3f63, pants: 0x2b3f63, hair: 0x6a6a6a, hat: 'cap', hatColor: 0x353535 },
         voice: { g: 'm', pitch: 0.8, rate: 0.95 }, start: 'o1', wait: 'o_wait', after: 'o_after', final: true,
       },
     ],
@@ -319,17 +319,17 @@ export const CHAPTERS = [
     npcs: [
       {
         id: 'guard', name: { sk: 'Pohraničník', en: 'Border guard' }, pos: [7.5, 3.5],
-        look: { coat: 0x4f5b3a, pants: 0x4f5b3a, hair: 0x3a3a3a, hat: 'ushanka', hatColor: 0x4f5b3a },
+        look: { model: 'Military_Male_05', coat: 0x4f5b3a, pants: 0x4f5b3a, hair: 0x3a3a3a, hat: 'ushanka', hatColor: 0x4f5b3a },
         voice: { g: 'm', pitch: 0.82, rate: 0.92 }, start: 'g1', after: 'g_after', required: true,
       },
       {
         id: 'gerti', name: { sk: 'Gerti z Hainburgu', en: 'Gerti from Hainburg' }, pos: [-7, -13.5],
-        look: { coat: 0x2e6b3a, pants: 0x333333, hair: 0xd8c08a, hat: 'none', scarf: 0xd8d8d8 },
+        look: { model: 'Female_Adult_14', coat: 0x2e6b3a, pants: 0x333333, hair: 0xd8c08a, hat: 'none', scarf: 0xd8d8d8 },
         voice: { g: 'f', pitch: 1.0, rate: 1.0 }, start: 'r1', after: 'r_after', required: true,
       },
       {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [5.5, -28],
-        look: { coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
+        look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],

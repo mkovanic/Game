@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CHAPTERS, CAST, epilogue } from './story.js';
 import { buildWorld } from './world.js';
-import { initPeople, makeCharacter, crowdPoses } from './people.js';
+import { initPeople, makeCharacter, crowdPoses, peopleDebug } from './people.js';
 import { Audio } from './audio.js';
 import { Voice, voiceDebug, preloadVoice } from './voice.js';
 import * as T from './textures.js';
@@ -702,4 +702,4 @@ el.menu.innerHTML = '<div class="menu-inner"><div class="sub">Načítavam… / L
 initPeople().then(() => { openMenu(); tick(); });
 
 // ladenie / automatické testy
-window.__game = { voiceDebug, loadChapter: (i) => { show(el.menu, false); loadChapter(i); }, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };
+window.__game = { voiceDebug, people: peopleDebug, loadChapter: (i) => { show(el.menu, false); loadChapter(i); }, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };

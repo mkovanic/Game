@@ -22,13 +22,13 @@ Ovládanie: **WASD** chôdza · **myš** rozhliadanie (klikni do hry) · **Shift
 
 ### Dabing (slovenčina / angličtina)
 
-Všetky repliky sú **vopred nahrané neurálnymi hlasmi** (`dist/voice/*.mp3`) – fungujú v každom prehliadači bez nastavovania. Slovenčina: Piper „lili“ (mužské postavy vznikli posunom výšky hlasu), angličtina: Kokoro (rôzne mužské a ženské hlasy). Priečinok `voice/` musí ležať vedľa `index.html`. Ak nahrávka chýba (napr. epilóg), použije sa hlas systému.
+Všetky repliky sú **vopred nahrané neurálnymi hlasmi** (`dist/voice/*.mp3`, 44,1 kHz / 96 kb/s) – fungujú v každom prehliadači bez nastavovania. Slovenčina: Microsoft Edge neurálne hlasy `sk-SK-LukasNeural` (muži) a `sk-SK-ViktoriaNeural` (ženy) cez balík [edge-tts](https://github.com/rany2/edge-tts); postavy sa líšia len jemne rýchlosťou a výškou. Angličtina: Kokoro (rôzni hovoriaci).
 
-Dabing sa po úprave textov v `src/story.js` pregeneruje takto: `node tools-export.mjs > lines.json` a `python3 tools-voice.py` (vyžaduje `sherpa-onnx==1.12.40`, `ffmpeg` a modely z vydania *tts-models* projektu k2-fsa/sherpa-onnx).
+Slovenský dabing sa po úprave textov v `src/story.js` pregeneruje takto: `node tools-export.mjs > lines.json` a `python3 tools-voice.py lines.json` (vyžaduje `pip install edge-tts`, `ffmpeg` a internet). Ukážky jednotlivých replík: `python3 tools-voice.py lines.json --sample out/ candle.k1`.
 
 ### 3D postavy
 
-Postavy a dav používajú skutočné rigované modely s motion-capture animáciami (`assets/Xbot.glb`, `assets/Soldier.glb` – z projektu three.js, pôvod Mixamo). Civilisti sú prefarbení podľa častí tela a doplnení o vlasy, čiapky a šály; dav používa „zapečené“ pózy s dvoma úrovňami detailu. V menu sa dá prepnúť **Grafika: nízka** pre slabšie počítače.
+Postavy a dav sú realistické otextúrované rigované modely s motion-capture animáciami z knižnice **[Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox)** (autor: Microsoft, licencia MIT) – 18 postáv a 16 animácií na spoločnom skelete (`assets/people/*.glb`). Konverziu robí `tools/people.sh` (Blender `tools/convert.py`: zloženie textúr do atlasu, export GLB; `tools/pack.mjs`: meshopt kompresia cez gltf-transform). Oblečenie sa v shaderi prefarbuje podľa častí tela do tmavších zimných tónov (`look.coat`, `look.pants`), trup je mierne „nafúknutý“ a postavy dostávajú čiapky, šatky a šály. Dav sa kreslí inštancovane zo „zapečených“ póz 8 modelov v dvoch úrovniach detailu.
 
 ## Vývoj
 

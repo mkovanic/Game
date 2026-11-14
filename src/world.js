@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as T from './textures.js';
-import { makeCharacter, crowdPoses, crowdMaterial } from './people.js';
+import { makeCharacter, crowdPoses } from './people.js';
 
 // ───────────────────────────── pomocné ─────────────────────────────
 const matCache = new Map();
@@ -394,8 +394,6 @@ export function makePerson(look = {}) {
 
 // ───────────────────────────── dav ─────────────────────────────
 const COATS = [0x2f3338, 0x3d3229, 0x46413a, 0x26303f, 0x4b3b2b, 0x5a4a3a, 0x3b4a3b, 0x6b5b4b, 0x2a2a2a, 0x54303a, 0x7a6a55, 0x384858, 0x6e6658];
-const SKIN = [0xd9ad8f, 0xe3bca0, 0xc99a7c, 0xe8c4aa];
-const HAIR = [0x2a1d14, 0x3b2a1a, 0x5a3c22, 0x15120f, 0x6e5a48, 0x8a8478, 0xb9b2a6, 0x7a4a2a];
 const HATS = [0x1f1f1f, 0x3a2f28, 0x2b3445, 0x6b2a2a, 0x555555, 0xb8b0a0];
 
 function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candles = 0, kneel = 0, move = null, lanes = null, coats = COATS }) {
@@ -412,37 +410,42 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     if (pts.some((p) => (p.x - x) ** 2 + (p.z - z) ** 2 < 0.42)) continue;
     pts.push({ x, z });
   }
-  const poses = crowdPoses();
-  const geos = move ? poses.walk : poses.idle;
-  const NG = geos.length;
+  const CP = crowdPoses();
+  const mods = CP.models.map((M, mi) => mi).filter((mi) => !move || CP.models[mi].walk);
+  const NG = move ? 8 : 3;
   const people = pts.map((p) => {
     let yaw = r() * Math.PI * 2;
     if (faceTarget) yaw = Math.atan2(faceTarget[0] - p.x, faceTarget[1] - p.z) + (r() - 0.5) * 0.9;
     if (move) yaw = Math.atan2(move.dir[0], move.dir[1]) + (r() - 0.5) * 0.25;
     const pray = !move && r() < kneel;
     return {
-      x: p.x, z: p.z, yaw, h: 0.9 + r() * 0.14, w: 0.94 + r() * 0.2, ph: r() * 10, sp: move ? move.speed * (0.85 + r() * 0.3) : 0,
-      g: move ? Math.floor(r() * NG) : pray ? 3 : Math.floor(r() * 3), candle: r() < candles,
+      x: p.x, z: p.z, yaw, h: 0.95 + r() * 0.1, w: 0.96 + r() * 0.12, ph: r() * 10, sp: move ? move.speed * (0.85 + r() * 0.3) : 0,
+      m: mods[Math.floor(r() * mods.length)], g: move ? Math.floor(r() * NG) : pray ? 2 : Math.floor(r() * 2), candle: r() < candles,
       coat: new THREE.Color(coats[Math.floor(r() * coats.length)]).multiplyScalar(0.8 + r() * 0.4),
-      cap: new THREE.Color(r() < 0.5 ? HATS[Math.floor(r() * HATS.length)] : HAIR[Math.floor(r() * HAIR.length)]),
+      hat: r() < 0.5 ? new THREE.Color(HATS[Math.floor(r() * HATS.length)]) : null,
     };
   });
-  const mat = crowdMaterial();
-  const capGeo = new THREE.SphereGeometry(0.108, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.6);
-  capGeo.scale(1, 1.05, 1.12);
-  const capMat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
+  // čiapky (len časť davu) – jedna inštancovaná sieť pre všetkých
+  const hatted = people.filter((p) => p.hat);
+  const capGeo = new THREE.SphereGeometry(1, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.55);
+  capGeo.scale(1, 0.95, 1.1);
+  const caps = new THREE.InstancedMesh(capGeo, new THREE.MeshStandardMaterial({ roughness: 0.95 }), Math.max(1, hatted.length));
+  caps.count = hatted.length; caps.frustumCulled = false; caps.castShadow = true;
+  hatted.forEach((p, i) => { p.hi = i; caps.setColorAt(i, p.hat); });
+  B.add(caps);
   const groups = [];
-  for (let g = 0; g < NG; g++) {
-    const list = people.filter((p) => p.g === g);
-    if (!list.length) { groups.push(null); continue; }
-    const hi = new THREE.InstancedMesh(geos[g].hi, mat, Math.min(list.length, 48));
-    const lo = new THREE.InstancedMesh(geos[g].lo, mat, list.length);
-    const caps = new THREE.InstancedMesh(capGeo, capMat, list.length);
-    hi.castShadow = true; hi.receiveShadow = true; lo.castShadow = !B.env.night;
-    hi.frustumCulled = lo.frustumCulled = caps.frustumCulled = false;
-    list.forEach((p, i) => caps.setColorAt(i, p.cap));
-    B.add(hi); B.add(lo); B.add(caps);
-    groups.push({ list, hi, lo, caps, max: hi.count });
+  for (const mi of mods) {
+    const M = CP.models[mi], geos = move ? M.walk : M.idle;
+    for (let g = 0; g < NG; g++) {
+      const list = people.filter((p) => p.m === mi && p.g === g);
+      if (!list.length) continue;
+      const hi = new THREE.InstancedMesh(geos[g].hi, M.mat, Math.min(list.length, 48));
+      const lo = new THREE.InstancedMesh(geos[g].lo, M.mat, list.length);
+      hi.castShadow = true; hi.receiveShadow = true; lo.castShadow = !B.env.night;
+      hi.frustumCulled = lo.frustumCulled = false;
+      B.add(hi); B.add(lo);
+      groups.push({ list, hi, lo, max: hi.count, g, geos, M });
+    }
   }
   // sviečky
   const cand = people.filter((p) => p.candle);
@@ -471,13 +474,11 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     const moved = (pp.x - lx) ** 2 + (pp.z - lz) ** 2 > 2.25;
     const still = !move && frame >= 0 && !moved;
     if (!still) { lx = pp.x; lz = pp.z; }
-    for (let g = 0; g < NG; g++) {
-      const G = groups[g];
-      if (!G) continue;
-      const geo = move ? geos[(g + f) % NG] : geos[g];
+    for (const G of groups) {
+      const geo = move ? G.geos[(G.g + f) % NG] : G.geos[G.g];
       if (move && f !== frame) { G.hi.geometry = geo.hi; G.lo.geometry = geo.lo; }
       if (still) continue; // stojaci dav stačí rozmiestniť, len keď sa hráč pohne
-      const head = geo.hi.userData.head;
+      const head = geo.hi.userData.head, capR = 0.108, capY = G.M.headTop - 0.125;
       let nh = 0, nl = 0;
       for (let i = 0; i < G.list.length; i++) {
         const p = G.list[i];
@@ -491,12 +492,16 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
         m4.compose(v, q, s);
         if ((p.x - pp.x) ** 2 + (p.z - pp.z) ** 2 < NEAR2 && nh < G.max) { G.hi.setMatrixAt(nh, m4); G.hi.setColorAt(nh++, p.coat); }
         else { G.lo.setMatrixAt(nl, m4); G.lo.setColorAt(nl++, p.coat); }
-        hv.copy(head).multiply(s).applyQuaternion(q); hv.y += 0.092 * p.h;
-        v.add(hv); s.setScalar(p.h); m4.compose(v, q, s); G.caps.setMatrixAt(i, m4);
+        if (p.hat && G.M.noHat) { m4.makeScale(0, 0, 0); caps.setMatrixAt(p.hi, m4); }
+        else if (p.hat) {
+          hv.copy(head).multiply(s).applyQuaternion(q); hv.y += capY * p.h;
+          v.add(hv); s.set(capR * p.w * p.h, capR * p.h, capR * p.w * p.h); m4.compose(v, q, s); caps.setMatrixAt(p.hi, m4);
+        }
       }
       G.hi.count = nh; G.lo.count = nl;
-      for (const m of [G.hi, G.lo, G.caps]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+      for (const m of [G.hi, G.lo]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
     }
+    if (!still) caps.instanceMatrix.needsUpdate = true;
     frame = f;
     if (candlePts) {
       const cp = candlePts.geometry.attributes.position;
@@ -619,7 +624,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     B.car(14.8, 36, Math.PI, 0xd4cfa2);
     // policajný kordón
     for (let i = 0; i < 7; i++) {
-      const p = makeCharacter({ hat: 'police' });
+      const p = makeCharacter({ model: 'Police_Male_03', coat: 0x4a5a3e, pants: 0x3a4632, tint: 0.85, idle: 'idle' });
       p.position.set(-12.5 + (i % 2) * 0.6, 0, 22 + i * 1.6);
       p.rotation.y = Math.PI / 2;
       root.add(p);
