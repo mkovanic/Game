@@ -87,6 +87,7 @@ export const CHAPTERS = [
   // ───────────────────────────── KAPITOLA 1 ─────────────────────────────
   {
     id: 'students',
+    action: 'chase',
     scene: 'students',
     date: { sk: '16. novembra 1989, popoludnie', en: '16 November 1989, afternoon' },
     place: { sk: 'Pred univerzitou, Bratislava', en: 'Outside the university, Bratislava' },
@@ -238,6 +239,7 @@ export const CHAPTERS = [
   // ───────────────────────────── KAPITOLA 3 ─────────────────────────────
   {
     id: 'strike',
+    action: 'siren',
     scene: 'strike',
     date: { sk: '27. novembra 1989, 11:50', en: '27 November 1989, 11:50 am' },
     place: { sk: 'Chemický závod na okraji Bratislavy', en: 'A chemical plant on the edge of Bratislava' },
@@ -305,6 +307,7 @@ export const CHAPTERS = [
   // ───────────────────────────── KAPITOLA 4 ─────────────────────────────
   {
     id: 'border',
+    action: 'wire',
     scene: 'border',
     date: { sk: '10. decembra 1989', en: '10 December 1989' },
     place: { sk: 'Hranica Petržalka – Berg, smer Hainburg', en: 'Petržalka – Berg border, towards Hainburg' },

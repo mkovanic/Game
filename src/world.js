@@ -522,8 +522,9 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     const still = !move && frame >= 0 && !moved;
     if (!still) { lx = pp.x; lz = pp.z; }
     for (const G of groups) {
-      const geo = move ? G.geos[(G.g + f) % NG] : G.geos[G.g];
-      if (move && f !== frame) { G.hi.geometry = geo.hi; G.lo.geometry = geo.lo; }
+      let geo = move ? G.geos[(G.g + f) % NG] : G.geos[G.g];
+      if (!move && B.crowdMode === 'cheer' && G.g < 2) geo = G.M.cheer[(Math.floor(t * 4.5) + G.g) % 3]; // jasajúci dav
+      if (G.cur !== geo) { G.hi.geometry = geo.hi; G.lo.geometry = geo.lo; G.cur = geo; }
       if (still) continue; // stojaci dav stačí rozmiestniť, len keď sa hráč pohne
       const head = geo.hi.userData.head, capR = 0.108, capY = G.M.headTop - 0.125;
       let nh = 0, nl = 0;
@@ -687,7 +688,8 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
       p.rotation.y = Math.PI / 2;
       root.add(p);
       B.updaters.push((t, dt) => p.userData.tick(dt, 0, false, t));
-      B.circles.push({ x: p.position.x, z: p.position.z, r: 0.35 });
+      const circle = { x: p.position.x, z: p.position.z, r: 0.35 };
+      B.circles.push(circle); (B.police ||= []).push({ obj: p, circle });
     }
     crowd(B, { count: 700, area: { minX: -11.5, maxX: 11.5, minZ: -34, maxZ: 26 }, clear: cl, faceTarget: [0, -60], candles: 0.65, kneel: 0.2, seed: 9 });
     rain(B);
@@ -885,6 +887,8 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     exposure,
     night: !!env.night,
     update(t, dt, pp) { for (const u of B.updaters) u(t, dt, pp); },
+    police: B.police || [],
+    setCrowd(m) { B.crowdMode = m; },
     dispose() {
       scene.remove(root);
       root.traverse((o) => {

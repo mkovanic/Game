@@ -93,7 +93,7 @@ function clipFor(M, name) {
       if (t.name !== 'Bip01.position') { tracks.push(t); continue; }
       const tr = t.clone(), v = tr.values, n = v.length / 3;
       const d = [v[v.length - 3] - v[0], v[v.length - 2] - v[1], v[v.length - 1] - v[2]];
-      for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) v[i * 3 + c] = (v[i * 3 + c] - (name === 'walk' ? d[c] * i / (n - 1) : 0)) * k;
+      for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) v[i * 3 + c] = (v[i * 3 + c] - (name === 'walk' || name === 'run' ? d[c] * i / (n - 1) : 0)) * k;
       tracks.push(tr);
     } else tracks.push(t);
   }
@@ -200,7 +200,10 @@ export function makeCharacter(look = {}) {
   // osi hlavy (svet hore / bok) v lokálnom priestore kosti – na otáčanie za hráčom a kývanie pri reči
   const iq = head.getWorldQuaternion(new THREE.Quaternion()).invert();
   const upL = new THREE.Vector3(0, 1, 0).applyQuaternion(iq), sideL = new THREE.Vector3(1, 0, 0).applyQuaternion(iq);
-  let hy = 0, speaking = false;
+  // sánka – pohyb pier pri reči (animácie ju neovládajú)
+  const jaw = B.MJaw, jawRest = jaw ? jaw.quaternion.clone() : null;
+  const jawAxis = jaw ? new THREE.Vector3(1, 0, 0).applyQuaternion(jaw.getWorldQuaternion(new THREE.Quaternion()).invert()) : null;
+  let hy = 0, speaking = false, mouth = 0;
   root.userData = {
     flame,
     // zmení základnú animáciu (napr. 'crouch', 'idle', 'clap')
@@ -220,6 +223,11 @@ export function makeCharacter(look = {}) {
       hy += (yaw - hy) * Math.min(1, dt * 4);
       head.rotateOnAxis(upL, hy);
       if (talking) head.rotateOnAxis(sideL, Math.sin(t * 7) * 0.03 + Math.sin(t * 2.3) * 0.025);
+      if (jaw) {
+        const open = talking ? Math.max(0, Math.sin(t * 13) * 0.6 + Math.sin(t * 7.3) * 0.4) * 0.16 : 0;
+        mouth += (open - mouth) * Math.min(1, dt * 18);
+        jaw.quaternion.copy(jawRest); if (mouth > 0.002) jaw.rotateOnAxis(jawAxis, mouth);
+      }
     },
   };
   return root;
@@ -289,6 +297,7 @@ function bakeCrowd() {
     out.models.push({
       name, mat: crowdMaterial(M.mat), headTop: M.headTop, noHat: HAS_HAT.test(name),
       idle: [pose('idle', 0.15), pose('idle2', 0.55), pose('crouch', 0.5)],
+      cheer: [pose('cheer', 0.2), pose('cheer', 0.4), pose('cheer', 0.6)],
       walk: walk ? Array.from({ length: 8 }, (_, i) => pose('walk', i / 8)) : null,
     });
   }

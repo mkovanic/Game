@@ -212,15 +212,15 @@ let action = null;
 function startAction() {
   mode = 'action';
   requestLock();
-  action = createAction(chapterDef.action, {
-    scene, camera, player, npcs, el, toast, lang: () => state.lang,
+  const mine = (action = createAction(chapterDef.action, {
+    scene, camera, player, npcs, el, toast, world, state, lang: () => state.lang,
     setObjective: (html) => (el.objective.innerHTML = `<b>${L().objective}:</b> ${html}`),
     finish: ({ fx, flag, text, delay = 2800 }) => {
       applyFx({ fx: fx && Object.keys(fx).length ? fx : null, flag });
       el.objective.innerHTML = text;
-      setTimeout(() => { if (!action) return; action.dispose(); action = null; chapterComplete(); }, delay);
+      setTimeout(() => { if (action !== mine) return; action.dispose(); action = null; chapterComplete(); }, delay);
     },
-  });
+  }));
 }
 
 function chapterComplete() {
@@ -545,7 +545,7 @@ window.addEventListener('keydown', (e) => {
     resume();
   }
 });
-window.addEventListener('keyup', (e) => (keys[e.code] = false));
+window.addEventListener('keyup', (e) => { keys[e.code] = false; if (mode === 'action') action?.keyup?.(e.code); });
 // pri strate pointer locku (Esc) prepneme do pauzy
 let wasLocked = false, lockedAt = 0;
 document.addEventListener('pointerlockchange', () => {

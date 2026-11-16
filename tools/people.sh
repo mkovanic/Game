@@ -15,7 +15,7 @@ for m in $NPC $CROWD; do
 done
 A=$RB/Assets/Animations
 for g in m f; do
-  for c in idle:idle_neutral_01 idle2:idle_look_around_01 idle3:idle_neutral_02 talk:gestic_talk_neutral_01 listen:gestic_listen_neutral_01 clap:claphands_01 crouch:crouch_idle walk:walk_neutral; do
+  for c in idle:idle_neutral_01 idle2:idle_look_around_01 idle3:idle_neutral_02 talk:gestic_talk_neutral_01 listen:gestic_listen_neutral_01 clap:claphands_01 crouch:crouch_idle walk:walk_neutral cheer:cheer_01 run:run_neutral; do
     n=${c%%:*}; f=$(ls $A/*/${g}_${c#*:}.max.fbx)
     $B -b -P tools/convert.py -- anim "$f" $TMP/$g-$n.glb $n >/dev/null 2>&1
     node tools/pack.mjs anim $TMP/$g-$n.glb $OUT/$g-$n.glb >/dev/null; echo "$g-$n $(stat -f%z $OUT/$g-$n.glb)"

@@ -33,8 +33,12 @@ import m_idle3 from '../assets/people/m-idle3.glb';
 import m_listen from '../assets/people/m-listen.glb';
 import m_talk from '../assets/people/m-talk.glb';
 import m_walk from '../assets/people/m-walk.glb';
+import m_cheer from '../assets/people/m-cheer.glb';
+import m_run from '../assets/people/m-run.glb';
+import f_cheer from '../assets/people/f-cheer.glb';
+import f_run from '../assets/people/f-run.glb';
 
 export const MODEL_BINS = { Business_Female_02, Business_Female_03, Business_Male_02, Business_Male_03, Construction_Male_02, Construction_Male_03, Female_Adult_04, Female_Adult_09, Female_Adult_11, Female_Adult_14, Female_Adult_15, Male_Adult_03, Male_Adult_04, Male_Adult_07, Male_Adult_12, Male_Adult_13, Military_Male_05, Police_Male_03 };
-export const ANIM_BINS = { 'f-clap': f_clap, 'f-crouch': f_crouch, 'f-idle': f_idle, 'f-idle2': f_idle2, 'f-idle3': f_idle3, 'f-listen': f_listen, 'f-talk': f_talk, 'f-walk': f_walk, 'm-clap': m_clap, 'm-crouch': m_crouch, 'm-idle': m_idle, 'm-idle2': m_idle2, 'm-idle3': m_idle3, 'm-listen': m_listen, 'm-talk': m_talk, 'm-walk': m_walk };
+export const ANIM_BINS = { 'm-cheer': m_cheer, 'm-run': m_run, 'f-cheer': f_cheer, 'f-run': f_run, 'f-clap': f_clap, 'f-crouch': f_crouch, 'f-idle': f_idle, 'f-idle2': f_idle2, 'f-idle3': f_idle3, 'f-listen': f_listen, 'f-talk': f_talk, 'f-walk': f_walk, 'm-clap': m_clap, 'm-crouch': m_crouch, 'm-idle': m_idle, 'm-idle2': m_idle2, 'm-idle3': m_idle3, 'm-listen': m_listen, 'm-talk': m_talk, 'm-walk': m_walk };
 export const CROWD_MODELS = ['Male_Adult_03', 'Male_Adult_04', 'Male_Adult_13', 'Business_Male_02', 'Construction_Male_03', 'Female_Adult_09', 'Female_Adult_11', 'Business_Female_02'];
 export const CROWD_WALKERS = ['Male_Adult_04', 'Business_Male_02', 'Female_Adult_09', 'Business_Female_02'];
