@@ -101,6 +101,19 @@ export const Audio = {
 
   sfx(name) {
     const c = ac(), t0 = c.currentTime;
+    if (name === 'mic') {
+      // skúška mikrofónu cez reproduktory: puknutie pri zapojení, krátka spätná väzba, dve ťuknutia do mikrofónu, potom dav
+      const thump = (t, g0) => { const o = c.createOscillator(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.18); const g = c.createGain(); g.gain.setValueAtTime(g0, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.35); };
+      thump(t0 + 0.9, 0.5);
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(2300, t0 + 1.1); o.frequency.linearRampToValueAtTime(2750, t0 + 1.7);
+      const g = c.createGain(); g.gain.setValueAtTime(0, t0 + 1.1); g.gain.linearRampToValueAtTime(0.06, t0 + 1.35); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.9);
+      o.connect(g); g.connect(master); o.start(t0 + 1.1); o.stop(t0 + 2);
+      thump(t0 + 2.5, 0.35); thump(t0 + 2.85, 0.35);
+      // ozvena z reproduktorov na druhom konci námestia
+      thump(t0 + 2.75, 0.12); thump(t0 + 3.1, 0.12);
+      setTimeout(() => this.sample('applause', 0.35), 4200);
+      return;
+    }
     if (name === 'car') { this.sample('car', 0.75); return; }
     if (name === 'keys' && this.sample('keys', 0.9)) return;
     if (name === 'water' && this.sample('water', 0.7)) return;

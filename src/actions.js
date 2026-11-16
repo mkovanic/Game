@@ -19,7 +19,7 @@ const TXT = {
     leaflet: 'Leták odovzdaný', leafletE: '<kbd>E</kbd> Podať leták', caught: '„Občiansky preukaz!“ Zdržal ťa a zapísal si tvoje meno.', chaseEnd: 'Všetky letáky sú medzi ľuďmi.', chaseClean: 'Všetky letáky sú medzi ľuďmi – a eštebák ťa nechytil.',
     sirenObj: 'O 12:00 sa začína generálny štrajk. Dôjdi k siréne pri bráne a spusti ju presne na poludnie.', sirenE: '<kbd>E</kbd> Spustiť sirénu', sirenEarly: 'Ešte nie – počkaj na 12:00',
     sirenOk: 'Presne na poludnie. Celý závod stojí.', sirenLate: 'Siréna znie. Generálny štrajk sa začal.', clock: 'Čas',
-    wireObj: 'Železná opona padá. Dôjdi k plotu vľavo od cesty a prestrihni ostnatý drôt.', wireE: 'Drž <kbd>E</kbd> – strihať drôt', wireCut: (n) => `Prestrihnuté ${n}/3`, wireEnd: 'Kúsok ostnatého drôtu si berieš so sebou. Na pamiatku.',
+    wireObj: 'Dav čaká pred posledným drôtom. Prestrihni ostnatý drôt natiahnutý cez cestu.', wireE: 'Drž <kbd>E</kbd> – strihať drôt', wireCut: (n) => `Prestrihnuté ${n}/3`, wireEnd: 'Cesta je voľná a dav vykročil do Rakúska. Kúsok ostnatého drôtu si berieš so sebou. Na pamiatku.',
     good: 'Presne!', keysEnd: 'Celé námestie štrngá kľúčmi. Posledné zvonenie.', keysEndWeak: 'Kľúče zneli námestím.',
   },
   en: {
@@ -32,7 +32,7 @@ const TXT = {
     leaflet: 'Leaflet handed over', leafletE: '<kbd>E</kbd> Hand over a leaflet', caught: '“Your papers!” He held you up and wrote down your name.', chaseEnd: 'All the leaflets are out among the people.', chaseClean: 'All the leaflets are out – and the secret policeman never caught you.',
     sirenObj: 'The general strike begins at 12:00. Reach the siren by the gate and sound it exactly at noon.', sirenE: '<kbd>E</kbd> Sound the siren', sirenEarly: 'Not yet – wait for 12:00',
     sirenOk: 'Exactly at noon. The whole plant stands still.', sirenLate: 'The siren wails. The general strike has begun.', clock: 'Time',
-    wireObj: 'The Iron Curtain is falling. Go to the fence left of the road and cut the barbed wire.', wireE: 'Hold <kbd>E</kbd> – cut the wire', wireCut: (n) => `Cut ${n}/3`, wireEnd: 'You take a piece of barbed wire with you. To remember.',
+    wireObj: 'The crowd is waiting at the last wire. Cut the barbed wire strung across the road.', wireE: 'Hold <kbd>E</kbd> – cut the wire', wireCut: (n) => `Cut ${n}/3`, wireEnd: 'The road is open and the crowd walks into Austria. You take a piece of barbed wire with you. To remember.',
     good: 'On the beat!', keysEnd: 'The whole square is jingling keys. The last bell tolls.', keysEndWeak: 'Keys rang across the square.',
   },
 };
@@ -467,13 +467,8 @@ function siren(ctx) {
 // ───────────────────────────── strihanie ostnatého drôtu ─────────────────────────────
 function wire(ctx) {
   const { scene, player, el } = ctx, S = TXT[ctx.lang()];
-  const X = -10.5, Z = 7.14, root = new THREE.Group(); scene.add(root);
-  const wm = std(0x8a8a8a, { metalness: 0.8, roughness: 0.4 });
-  const strands = [0.9, 1.4, 1.9].map((y) => {
-    const g = new THREE.Group(); g.position.set(X, y, Z);
-    const halves = [-1, 1].map((s) => { const h = new THREE.Group(); h.position.x = s * 1.5; const m = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.5, 6), wm); m.rotation.z = Math.PI / 2; m.position.x = -s * 0.75; h.add(m); for (let k = 0; k < 4; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.09, 0.02), wm); b.position.set(-s * (0.2 + k * 0.36), 0, 0); b.rotation.x = k; h.add(b); } g.add(h); return { h, s }; });
-    root.add(g); return { halves, cut: false, sag: 0 };
-  });
+  const W = ctx.world.wireGate, X = W.x, Z = W.z, root = new THREE.Group(); scene.add(root);
+  const strands = W.strands;
   const mark = beacon(scene, X, Z + 0.5, 2.6);
   let t = 0, prog = 0, n = 0, done = false, near = false;
   el.action.classList.remove('hidden'); ctx.setObjective(S.wireObj);
@@ -481,14 +476,14 @@ function wire(ctx) {
     held: false,
     update(dt) {
       t += dt; mark.rotation.y = t * 2;
-      for (const s of strands) if (s.cut && s.sag < 1) { s.sag = Math.min(1, s.sag + dt * 2.5); s.halves.forEach(({ h, s: sd }) => (h.rotation.z = sd * s.sag * 1.15)); }
+      for (const s of strands) if (s.cut && s.sag < 1) { s.sag = Math.min(1, s.sag + dt * 2.5); s.halves.forEach(({ h, s: sd }) => { h.rotation.y = sd * s.sag * 1.35; h.rotation.z = sd * s.sag * 0.12; }); }
       if (done) return;
-      near = Math.abs(player.x - X) < 2.2 && player.z > Z && player.z < Z + 2.4;
+      near = Math.abs(player.x - X) < 4 && player.z > Z && player.z < Z + 2.6;
       el.prompt.innerHTML = S.wireE; el.prompt.classList.toggle('hidden', !near);
       if (near && this.held) { prog += dt / 1.3; if (Math.floor(t * 6) !== Math.floor((t - dt) * 6)) Audio.sfx('blip'); } else prog = Math.max(0, prog - dt);
       if (prog >= 1) {
         prog = 0; strands[n].cut = true; n++; ctx.toast(S.wireCut(n)); jingle(0.8);
-        if (n >= 3) { done = true; scene.remove(mark); el.prompt.classList.add('hidden'); Audio.sfx('applause'); ctx.finish({ fx: { courage: 1 }, flag: 'wire', text: S.wireEnd, delay: 5000 }); }
+        if (n >= 3) { done = true; scene.remove(mark); el.prompt.classList.add('hidden'); Audio.sfx('applause'); ctx.world.openBorder(); ctx.world.setCrowd('cheer'); ctx.finish({ fx: { courage: 1 }, flag: 'wire', text: S.wireEnd, delay: 9000 }); }
       }
       el.action.innerHTML = `<div class="bar gold"><i style="width:${(((n + prog) / 3) * 100).toFixed(1)}%"></i></div><div class="row"><span>✂ ${n}/3</span></div>`;
     },

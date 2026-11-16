@@ -424,14 +424,14 @@ export function makePerson(look = {}) {
 const COATS = [0x2f3338, 0x3d3229, 0x46413a, 0x26303f, 0x4b3b2b, 0x5a4a3a, 0x3b4a3b, 0x6b5b4b, 0x2a2a2a, 0x54303a, 0x7a6a55, 0x384858, 0x6e6658];
 const HATS = [0x1f1f1f, 0x3a2f28, 0x2b3445, 0x6b2a2a, 0x555555, 0xb8b0a0];
 
-function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candles = 0, kneel = 0, move = null, lanes = null, coats = COATS }) {
+function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candles = 0, kneel = 0, move = null, lanes = null, coats = COATS, hold = null }) {
   const r = T.rng(seed);
   const pts = [];
   let tries = 0;
   while (pts.length < count && tries < count * 30) {
     tries++;
     const x = area.minX + r() * (area.maxX - area.minX);
-    const z = area.minZ + r() * (area.maxZ - area.minZ);
+    const z0 = hold ? hold.minZ : area.minZ, z = z0 + r() * (area.maxZ - z0);   // hold: dav najprv čaká za čiarou
     if (lanes && !lanes.some(([a, b]) => x >= a && x <= b)) continue;
     if (clear.some((c) => c.length === 3 && (x - c[0]) ** 2 + (z - c[1]) ** 2 < c[2] * c[2])) continue;
     if (clear.some((c) => c.length === 4 && x > c[0] && x < c[1] && z > c[2] && z < c[3])) continue;
@@ -498,7 +498,10 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), v = new THREE.Vector3(), hv = new THREE.Vector3();
   let frame = -1, lx = 1e9, lz = 1e9, settle = 0;
   const NEAR2 = 8 * 8;
+  if (hold) B.crowdHold = true;
+  const moveCfg = move;
   const update = (t, dt, pp = { x: 0, z: 0 }) => {
+    const move = moveCfg && !B.crowdHold ? moveCfg : null;   // čakajúci dav stojí, po uvoľnení vykročí
     const f = Math.floor(t * 11);
     const moved = (pp.x - lx) ** 2 + (pp.z - lz) ** 2 > 2.25;
     // dav uhýba autám a kordónu (B.repel = [{ x, z, r }])
@@ -507,8 +510,8 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     const still = false; // dav sa jemne hýbe stále (prenášanie váhy, obzeranie sa, dýchanie)
     if (!still) { lx = pp.x; lz = pp.z; }
     for (const G of groups) {
-      let geo = move ? G.geos[(G.g + f) % NG] : G.geos[G.g];
-      if (!move && B.crowdMode === 'cheer' && G.g < 2) geo = G.M.cheer[(Math.floor(t * 4.5) + G.g) % 3]; // jasajúci dav
+      let geo = move ? G.geos[(G.g + f) % NG] : moveCfg ? G.M.idle[G.g % 2] : G.geos[G.g];
+      if (!moveCfg && B.crowdMode === 'cheer' && G.g < 2) geo = G.M.cheer[(Math.floor(t * 4.5) + G.g) % 3]; // jasajúci dav
       if (G.cur !== geo) { G.hi.geometry = geo.hi; G.lo.geometry = geo.lo; G.cur = geo; }
       if (still) continue; // stojaci dav stačí rozmiestniť, len keď sa hráč pohne
       const head = geo.hi.userData.head, capR = 0.108, capY = G.M.headTop - 0.125;
@@ -532,7 +535,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
         if (move) { p.ay = p.yaw; e.set(0, p.yaw, 0); s.set(p.w * p.h, p.h, p.w * p.h); v.set(p.x, 0, p.z); }
         else {
           // stojaci človek: pomalé obzeranie sa, prenášanie váhy z nohy na nohu, dych; kľačiaci sa hýbe menej
-          const k = p.g === 2 ? 0.35 : 1, a = t + p.ph * 7;
+          const k = !moveCfg && p.g === 2 ? 0.35 : 1, a = t + p.ph * 7;
           const look = (Math.sin(a * 0.21) + Math.sin(a * 0.083 + p.ph)) * 0.11 * k;
           const sw = Math.sin(a * 0.55 + p.ph * 3), fw = Math.sin(a * 0.37 + p.ph * 5);
           p.ay = p.yaw + look;
@@ -558,7 +561,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     if (candlePts) {
       const cp = candlePts.geometry.attributes.position;
       {
-        cand.forEach((p, i) => { const y = p.ay ?? p.yaw; cp.setXYZ(i, p.x + Math.sin(y) * 0.28 + Math.cos(y) * 0.12, (!move && p.g === 2 ? 0.62 : 1.02) * p.h + Math.sin(t * 0.9 + p.ph * 4) * 0.012, p.z + Math.cos(y) * 0.28 - Math.sin(y) * 0.12); });
+        cand.forEach((p, i) => { const y = p.ay ?? p.yaw; cp.setXYZ(i, p.x + Math.sin(y) * 0.28 + Math.cos(y) * 0.12, (!moveCfg && p.g === 2 ? 0.62 : 1.02) * p.h + Math.sin(t * 0.9 + p.ph * 4) * 0.012, p.z + Math.cos(y) * 0.28 - Math.sin(y) * 0.12); });
         cp.needsUpdate = true;
       }
       candlePts.material.size = 0.29 + Math.sin(t * 17) * 0.02;
@@ -730,6 +733,20 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     const wood = std(0x5a4632);
     root.add(mesh(new THREE.BoxGeometry(14, 1.4, 6), wood, 0, 0.7, -38));
     B.collideBox(0, -38, 14, 6);
+    // stanovište zvukára: mixpult na stole, mikrofón na stojane a reproduktor
+    {
+      const dk = std(0x1c1c1e), wood = std(0x6a4a2a);
+      root.add(mesh(new THREE.BoxGeometry(1.5, 0.06, 0.7), wood, 15.6, 0.85, -27.6));
+      for (const [a, b] of [[-0.68, -0.3], [0.68, -0.3], [-0.68, 0.3], [0.68, 0.3]]) root.add(mesh(new THREE.BoxGeometry(0.05, 0.85, 0.05), wood, 15.6 + a, 0.425, -27.6 + b));
+      const desk = mesh(new THREE.BoxGeometry(0.9, 0.1, 0.5), dk, 15.5, 0.94, -27.6); desk.rotation.x = -0.15; root.add(desk);
+      for (let i = 0; i < 8; i++) root.add(mesh(new THREE.BoxGeometry(0.03, 0.03, 0.06), std(i % 3 ? 0xd8d8d8 : 0xc0392b), 15.15 + i * 0.1, 1.0, -27.6 + ((i * 7) % 5) * 0.05 - 0.1));
+      root.add(mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.5, 6), dk, 13.1, 0.75, -27.4));
+      root.add(mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.03, 12), dk, 13.1, 0.015, -27.4));
+      const mic = mesh(new THREE.CylinderGeometry(0.022, 0.018, 0.16, 8), std(0x8a8a8a, { metalness: 0.7, roughness: 0.4 }), 13.1, 1.55, -27.36); mic.rotation.x = 1.0; root.add(mic);
+      root.add(mesh(new THREE.BoxGeometry(0.6, 1.1, 0.5), dk, 16.9, 0.55, -27.2));
+      root.add(mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 16), std(0x3a3a3e), 16.9, 0.72, -26.94).rotateX(Math.PI / 2));
+      B.collideBox(15.9, -27.5, 2.6, 0.9);
+    }
     const back = T.banner('VEREJNOSŤ PROTI NÁSILIU', { bg: '#f4f1ea', fg: '#0b4ea2', w: 1024, h: 160 });
     const bw = new THREE.Mesh(new THREE.PlaneGeometry(13, 2), new THREE.MeshStandardMaterial({ map: back, emissive: 0xffffff, emissiveMap: back, emissiveIntensity: 0.35 }));
     bw.position.set(0, 4.6, -40.9);
@@ -743,7 +760,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
       root.add(sp); root.add(sp.target);
     }
     root.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5, 6), std(0x222222), 0, 2.15, -36));
-    crowd(B, { count: 1100, area: { minX: -22, maxX: 22, minZ: -33, maxZ: 28 }, clear: [...cl, [-1.6, 1.6, -40, 50]], faceTarget: [0, -40], candles: 0.12, seed: 41 });
+    crowd(B, { count: 1100, area: { minX: -22, maxX: 22, minZ: -33, maxZ: 28 }, clear: [...cl, [-1.6, 1.6, -40, 50], [16, -27.4, 1.9]], faceTarget: [0, -40], candles: 0.12, seed: 41 });
     const ban = ['SLOBODNÉ VOĽBY', 'DIALÓG', 'KONIEC VLÁDY JEDNEJ STRANY', 'VPN', 'GENERÁLNY ŠTRAJK 27. 11.', 'PRAVDA ZVÍŤAZÍ'];
     ban.forEach((t, i) => B.banner(-16 + i * 6.5, -10 + (i % 3) * 9, t, 0, { w: 3.6 }));
     for (let i = 0; i < 10; i++) B.flag(-20 + i * 4.4, -26 + (i * 7) % 40, T.flagCS(), 3.6);
@@ -878,7 +895,24 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     const castle = std(0x9a948a);
     root.add(mesh(new THREE.BoxGeometry(14, 8, 8), castle, -60, 30, -170, false));
     root.add(mesh(new THREE.CylinderGeometry(3, 3, 14, 10), castle, -52, 32, -168, false));
-    crowd(B, { count: 520, area: { minX: -3.8, maxX: 3.8, minZ: -58, maxZ: 58 }, lanes: [[-3.8, -1.1], [1.1, 3.8]], move: { dir: [0, -1], speed: 1.15 }, seed: 61 });
+    // ostnatý drôt natiahnutý cez cestu na druhej línii plota – prestrihne ho hráč (scénka „wire“)
+    {
+      const wm = std(0x8a8a8a, { metalness: 0.8, roughness: 0.4 }), HL = 7;
+      const strands = [0.9, 1.4, 1.9].map((y) => {
+        const g = new THREE.Group(); g.position.set(0, y, 0.14);
+        const halves = [-1, 1].map((sd) => {
+          const h = new THREE.Group(); h.position.x = sd * HL;
+          const m = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, HL, 6), wm); m.rotation.z = Math.PI / 2; m.position.x = -sd * HL / 2; h.add(m);
+          for (let k = 0; k < 16; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.09, 0.012), wm); b.position.x = -sd * (0.3 + k * 0.42); b.rotation.set(k * 1.3, 0, 0.7); h.add(b); }
+          g.add(h); return { h, s: sd };
+        });
+        root.add(g); return { halves, cut: false, sag: 0 };
+      });
+      const box = { minX: -7, maxX: 7, minZ: -0.1, maxZ: 0.4 };
+      B.boxes.push(box);
+      B.wireGate = { strands, box, x: 0, z: 0.14 };
+    }
+    crowd(B, { count: 400, area: { minX: -3.8, maxX: 3.8, minZ: -58, maxZ: 58 }, lanes: [[-3.8, -1.1], [1.1, 3.8]], clear: cl, move: { dir: [0, -1], speed: 1.15 }, hold: { minZ: 1.6 }, seed: 61 });
     snow(B, 1500, 0.6);
     bounds = { minX: -30, maxX: 30, minZ: -56, maxZ: 52 };
   }
@@ -893,6 +927,9 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     update(t, dt, pp) { for (const u of B.updaters) u(t, dt, pp); },
     police: B.police || [],
     setCrowd(m) { B.crowdMode = m; },
+    wireGate: B.wireGate || null,
+    // hranica je otvorená: zmizne zábrana a čakajúci dav vykročí
+    openBorder() { if (B.wireGate) { const i = B.boxes.indexOf(B.wireGate.box); if (i >= 0) B.boxes.splice(i, 1); } B.crowdHold = false; },
     setRepel(list) { B.repel = list; },
     dispose() {
       scene.remove(root);

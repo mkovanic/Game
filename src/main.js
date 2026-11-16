@@ -524,6 +524,11 @@ function endDialogue() {
   const wasMain = dlg.startedFrom === (d.quest ? d.quest.done : d.start);
   if (wasMain) talked[d.id] = true;
   if (d.quest && dlg.startedFrom === d.quest.ask) asked[d.id] = true;
+  // doručený predmet ostane ležať pri postave, ktorá oň žiadala
+  if (wasMain && d.quest) {
+    const it = items.find((i) => i.def.flag === d.quest.need), o = dlg.npc.obj;
+    if (it && !it.delivered) { it.delivered = true; it.obj.userData.marker.visible = false; it.obj.position.set(o.position.x + Math.cos(o.rotation.y) * 0.75, 0, o.position.z - Math.sin(o.rotation.y) * 0.75); it.obj.visible = true; }
+  }
   refreshHud();
   dlg.npc = null; dlg.node = null;
   if (wasMain && d.final) { if (chapterDef.action) startAction(); else chapterComplete(); return; }
@@ -704,8 +709,8 @@ function tick() {
     // predmety úloh: zobrazia sa, keď o ne postava požiada
     nearItem = null;
     if (mode === 'play') for (const it of items) {
-      it.obj.visible = !it.taken && (!it.def.after || !!asked[it.def.after]);
-      if (!it.obj.visible) continue;
+      it.obj.visible = !!it.delivered || (!it.taken && (!it.def.after || !!asked[it.def.after]));
+      if (!it.obj.visible || it.delivered) continue;
       it.obj.userData.marker.position.y = 1.1 + Math.sin(time * 3) * 0.08; it.obj.userData.marker.rotation.y = time * 2;
       if (Math.hypot(it.def.pos[0] - player.x, it.def.pos[1] - player.z) < 2.2) nearItem = it;
     }

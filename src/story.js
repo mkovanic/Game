@@ -241,7 +241,7 @@ export const CHAPTERS = [
       m1: { who: 'milan', sk: "Hej, ty! Nevidel si niekde kábel? Mikrofón na tribúne onemel a o chvíľu má hovoriť Kňažko. Bez zvuku nás počuje prvých päť radov.", en: "Hey, you! Have you seen a cable anywhere? The microphone on the stage went dead and Kňažko is due to speak in a minute. Without sound only the first five rows can hear us.", choices: [{ sk: 'Pohľadám ho.', en: 'I will look for it.', fx: { trust: 1 }, next: 'm2' }, { sk: 'Kde si ho videl naposledy?', en: 'Where did you last see it?', next: 'm2' }] },
       m2: { who: 'milan', sk: "Bubon s káblom ostal pri lampe na kraji námestia, tam vzadu, odkiaľ si prišiel. Stotisíc ľudí čaká na jeden kábel.", en: "The cable drum was left by the lamp at the edge of the square, back there where you came from. A hundred thousand people are waiting for one cable." },
       m_wait: { who: 'milan', sk: "Bubon s káblom. Pri lampe vzadu na kraji námestia.", en: "The cable drum. By the lamp at the back edge of the square." },
-      m3: { who: 'milan', sk: "To je on! Sekundu… Skúška, skúška. Ide to. Vieš, čo je na tom najkrajšie? Prvý raz po štyridsiatich rokoch sa tu do mikrofónu hovorí bez povolenia.", en: "That is it! One second… Testing, testing. It works. Do you know the best part? For the first time in forty years, somebody speaks into a microphone here without a permit.", fx: { courage: 1 }, next: 'm4' },
+      m3: { who: 'milan', sk: "To je on! Sekundu… Skúška, skúška. Ide to. Vieš, čo je na tom najkrajšie? Prvý raz po štyridsiatich rokoch sa tu do mikrofónu hovorí bez povolenia.", en: "That is it! One second… Testing, testing. It works. Do you know the best part? For the first time in forty years, somebody speaks into a microphone here without a permit.", fx: { courage: 1 }, sfx: 'mic', next: 'm4' },
       m4: { who: 'milan', sk: "Choď za tribúnu, tvoje dievča ťa tam hľadá.", en: "Go behind the stage, your girl is looking for you there." },
       m_after: { who: 'milan', sk: "Ide to. Počuť nás až na druhý koniec námestia.", en: "It works. They can hear us all the way across the square." },
       i1: { who: 'igor', sk: 'Dnes sa nehrá, mladý muž. Divadlá štrajkujú. Namiesto predstavení sa večer čo večer rozprávame s ľuďmi. Najväčšie predstavenie môjho života – a nikto v ňom nehrá.', en: "No show tonight, young man. The theatres are on strike. Instead of performing, we talk with people, night after night. The greatest show of my life – and nobody is acting.",
@@ -354,12 +354,12 @@ export const CHAPTERS = [
       z_after: { who: 'zuzka', sk: 'O dvanástej, nezabudni!', en: "Noon, don't forget!" },
 
       o_wait: { who: 'otec', sk: 'Jano, čo tu robíš? Chlapi ešte váhajú. Porozprávaj sa s Ondrejom – jeho budú počúvať.', en: "Jano, what are you doing here? The lads are still hesitating. Talk to Ondrej – they'll listen to him." },
-      o1: { who: 'otec', sk: 'Je dvanásť. Počuješ to?', en: "It's noon. Do you hear that?", sfx: 'siren', next: 'o2' },
-      o2: { who: 'narrator', sk: 'Sirény zavýjajú v celej krajine. Linky sa zastavujú. Z hál vychádzajú ľudia – v montérkach, so zástavami, s trikolórami.', en: 'Sirens wail across the whole country. Production lines stop. People pour out of the halls – in overalls, with flags and tricolours.',
+      o1: { who: 'otec', sk: 'O chvíľu je dvanásť. Chlapi čakajú na znamenie.', en: "It's almost noon. The lads are waiting for the signal.", next: 'o2' },
+      o2: { who: 'otec', sk: 'Závodnú sirénu však nemá kto spustiť – majster, čo ju mal na starosti, ostal doma. Presne o dvanástej ju treba pustiť ručne. Ani skôr, ani neskôr.', en: 'But there is nobody to sound the plant siren – the foreman in charge of it stayed at home. It has to be set off by hand at exactly twelve. Not sooner, not later.',
         branch: (st) => (st.stats.trust >= 3 ? 'o3a' : 'o3b') },
-      o3a: { who: 'otec', sk: 'Aj Ondrej vyšiel. Pozri – celá zmena. Si dobrý chlapec, Jano. Mama bude hrdá.', en: "Even Ondrej came out. Look – the whole shift. You're a good lad, Jano. Your mum will be proud.", next: 'o4' },
-      o3b: { who: 'otec', sk: 'Nie všetci vyšli. Niektorí sa ešte boja. Ale je nás viac, než som čakal.', en: "Not everyone came out. Some are still scared. But there are more of us than I expected.", next: 'o4' },
-      o4: { who: 'otec', sk: 'Dvadsať rokov som mlčal. Dnes mlčí fabrika – a to je najhlasnejšie, čo som kedy počul.', en: "I kept quiet for twenty years. Today the factory is silent – and it's the loudest thing I've ever heard." },
+      o3a: { who: 'otec', sk: 'Aj Ondrej sa pridá. Pozri – celá zmena čaká. Si dobrý chlapec, Jano. Mama bude hrdá.', en: "Even Ondrej will join. Look – the whole shift is waiting. You're a good lad, Jano. Your mum will be proud.", next: 'o4' },
+      o3b: { who: 'otec', sk: 'Nie všetci sa pridajú. Niektorí sa ešte boja. Ale je nás viac, než som čakal.', en: "Not everyone will join. Some are still scared. But there are more of us than I expected.", next: 'o4' },
+      o4: { who: 'otec', sk: 'Dvadsať rokov som mlčal. Dnes zmĺkne fabrika – a bude to najhlasnejšie, čo som kedy počul. Bež k siréne, Jano.', en: "I kept quiet for twenty years. Today the factory falls silent – and it will be the loudest thing I've ever heard. Run to the siren, Jano." },
       o_after: { who: 'otec', sk: 'Dve hodiny. Potom ideme späť k strojom – ale už ako slobodní ľudia.', en: "Two hours. Then back to the machines – but as free people." },
     },
     history: {
@@ -372,7 +372,7 @@ export const CHAPTERS = [
   {
     id: 'border',
     action: 'wire',
-    brief: { sk: "Plot, ktorý štyridsať rokov delil Európu, stojí pár krokov od teba. Dnes ho už nikto nestráži.", en: "The fence that divided Europe for forty years stands a few steps away. Today nobody guards it any more." },
+    brief: { sk: "Drôt, ktorý štyridsať rokov delil Európu, je pár krokov od teba. Dnes ho už nikto nestráži. Katka ti podáva kliešte.", en: "The wire that divided Europe for forty years is a few steps away. Today nobody guards it any more. Katka hands you the cutters." },
     scene: 'border',
     date: { sk: '10. decembra 1989', en: '10 December 1989' },
     place: { sk: 'Hranica Petržalka – Berg, smer Hainburg', en: 'Petržalka – Berg border, towards Hainburg' },
@@ -382,8 +382,8 @@ export const CHAPTERS = [
       en: 'For forty years barbed wire separated Petržalka from Austria. Today is Sunday, and tens of thousands of people from Bratislava are walking to Hainburg in Austria. Without exit permits. Just like that – for a stroll.',
     },
     objective: {
-      sk: 'Prejdi hranicou. Katka čaká na rakúskej strane.',
-      en: 'Cross the border. Katka is waiting on the Austrian side.',
+      sk: 'Dôjdi k hranici. Katka čaká pri drôte.',
+      en: 'Walk to the border. Katka is waiting by the wire.',
     },
     spawn: [0, 44],
     items: [{ id: 'photo', kind: 'paper', pos: [6.2, 25], after: 'rudolf', flag: 'photo', name: { sk: 'Stará fotografia', en: 'Old photograph' }, text: { sk: 'Našiel si fotografiu. Vráť ju pánovi Rudolfovi.', en: 'You found the photograph. Return it to Mr Rudolf.' } }],
@@ -394,7 +394,7 @@ export const CHAPTERS = [
         voice: { g: 'm', pitch: 0.82, rate: 0.92 }, start: 'g1', after: 'g_after', required: true,
       },
       {
-        id: 'gerti', name: { sk: 'Gerti z Hainburgu', en: 'Gerti from Hainburg' }, pos: [-7, -13.5],
+        id: 'gerti', name: { sk: 'Gerti z Hainburgu', en: 'Gerti from Hainburg' }, pos: [-0.7, -1.9],
         look: { model: 'Female_Adult_14', coat: 0x2e6b3a, pants: 0x333333, hair: 0xd8c08a, hat: 'none', scarf: 0xd8d8d8 },
         voice: { g: 'f', pitch: 1.0, rate: 1.0 }, start: 'r1', after: 'r_after', required: true,
       },
@@ -405,7 +405,7 @@ export const CHAPTERS = [
         quest: { need: 'photo', ask: 'ru1', wait: 'ru_wait', done: 'ru3', hint: { sk: 'Nájdi v snehu pri ceste fotografiu, ktorú stratil pán Rudolf.', en: 'Find the photograph Mr Rudolf lost in the snow by the road.' } },
       },
       {
-        id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [5.5, -28],
+        id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [0.7, 2.3],
         look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
@@ -426,7 +426,7 @@ export const CHAPTERS = [
       g3: { who: 'guard', sk: 'Dnes len stojím a pozerám sa. Prvýkrát v živote ma nikto nenúti ani strieľať, ani mlčať.', en: "Today I just stand and watch. For the first time in my life nobody is making me shoot or keep quiet." },
       g_after: { who: 'guard', sk: 'Pokojnú cestu.', en: 'Safe journey.' },
 
-      r1: { who: 'gerti', sk: 'Grüß Gott! Vitajte, susedia! Celý Hainburg čaká s teplým čajom. Toľko rokov sme sa na vás len pozerali cez rieku.', en: "Grüß Gott! Welcome, neighbours! All of Hainburg is waiting with hot tea. For so many years we could only look at you across the river.",
+      r1: { who: 'gerti', sk: 'Grüß Gott! Vitajte, susedia! Celý Hainburg čaká s teplým čajom. Toľko rokov sme sa na vás len pozerali cez drôt.', en: "Grüß Gott! Welcome, neighbours! All of Hainburg is waiting with hot tea. For so many years we could only look at you through the wire.",
         choices: [
           { sk: 'Ďakujeme. Je to ako sen.', en: "Thank you. It's like a dream.", next: 'r2', fx: { trust: 1 } },
           { sk: 'Ako vyzerá Viedeň?', en: 'What is Vienna like?', next: 'r3' },
@@ -449,7 +449,7 @@ export const CHAPTERS = [
       k3a: { who: 'katka', sk: 'Tak sa vráť. Bude ťa tu treba.', en: "Then come back. You'll be needed here.", next: 'k4' },
       k3b: { who: 'katka', sk: 'Sloboda nie je darček, Jano. Treba ju chrániť každý deň.', en: "Freedom isn't a gift, Jano. It has to be protected every day.", next: 'k4' },
       k3c: { who: 'katka', sk: 'Tak poď. Máme pred sebou celú Európu.', en: "Then come on. We have the whole of Europe ahead of us.", next: 'k4' },
-      k4: { who: 'narrator', sk: 'V ten istý deň prezident Husák vymenoval vládu národného porozumenia a abdikoval. Kráčali sme po ceste, kde ešte včera stál drôt. Ahoj, Európa.', en: 'That same day President Husák appointed a government of national understanding and resigned. We walked down a road where only yesterday there had been wire. Hello, Europe.' },
+      k4: { who: 'narrator', sk: 'V ten istý deň prezident Husák vymenoval vládu národného porozumenia a abdikoval. Vykročili sme po ceste, cez ktorú bol ešte pred chvíľou natiahnutý drôt. Ahoj, Európa.', en: 'That same day President Husák appointed a government of national understanding and resigned. We set off down a road that had been strung with wire only a moment before. Hello, Europe.' },
       k_after: { who: 'katka', sk: 'Ideme ďalej?', en: 'Shall we keep going?' },
     },
     history: {
