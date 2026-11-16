@@ -679,7 +679,11 @@ function tick() {
       const s = Math.sin(player.yaw), c = Math.cos(player.yaw);
       player.x += (fx * c + fz * s) * sp;
       player.z += (-fx * s + fz * c) * sp;
-      player.bob += dt * (keys.ShiftLeft ? 13 : 9);
+      const b0 = player.bob;
+      player.bob += dt * (keys.ShiftLeft || keys.ShiftRight ? 13 : 10.5);
+      // krok zaznie, keď kamera dosadne (spodok vlny)
+      const K = (x) => Math.floor((x - Math.PI * 1.5) / (Math.PI * 2));
+      if (K(player.bob) !== K(b0)) Audio.step(!!(keys.ShiftLeft || keys.ShiftRight));
     }
     collide();
     // najbližšia postava

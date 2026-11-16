@@ -11,7 +11,7 @@
 
 services:
   web:
-    image: registry.kovanic.sk/matokovanic/sviecky-a-kluce:1.0.2
+    image: registry.kovanic.sk/matokovanic/sviecky-a-kluce:1.0.3
     ports:
       - "5496:80"
     deploy:

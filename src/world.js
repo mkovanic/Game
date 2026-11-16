@@ -504,7 +504,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     // dav uhýba autám a kordónu (B.repel = [{ x, z, r }])
     const rep = !move && B.repel && B.repel.length ? B.repel : null;
     if (rep) settle = 1.2; else settle = Math.max(0, settle - dt);
-    const still = !move && frame >= 0 && !moved && settle <= 0;
+    const still = false; // dav sa jemne hýbe stále (prenášanie váhy, obzeranie sa, dýchanie)
     if (!still) { lx = pp.x; lz = pp.z; }
     for (const G of groups) {
       let geo = move ? G.geos[(G.g + f) % NG] : G.geos[G.g];
@@ -529,8 +529,18 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
           p.ox += (tx - p.ox) * Math.min(1, dt * 7);
           p.x = p.bx + p.ox; circles[p.ci].x = p.x;
         }
-        e.set(0, p.yaw, 0); q.setFromEuler(e);
-        s.set(p.w * p.h, p.h, p.w * p.h); v.set(p.x, 0, p.z);
+        if (move) { p.ay = p.yaw; e.set(0, p.yaw, 0); s.set(p.w * p.h, p.h, p.w * p.h); v.set(p.x, 0, p.z); }
+        else {
+          // stojaci človek: pomalé obzeranie sa, prenášanie váhy z nohy na nohu, dych; kľačiaci sa hýbe menej
+          const k = p.g === 2 ? 0.35 : 1, a = t + p.ph * 7;
+          const look = (Math.sin(a * 0.21) + Math.sin(a * 0.083 + p.ph)) * 0.11 * k;
+          const sw = Math.sin(a * 0.55 + p.ph * 3), fw = Math.sin(a * 0.37 + p.ph * 5);
+          p.ay = p.yaw + look;
+          e.set(fw * 0.022 * k, p.ay, sw * 0.03 * k);
+          s.set(p.w * p.h, p.h * (1 + Math.sin(a * 1.6) * 0.004), p.w * p.h);
+          v.set(p.x + Math.cos(p.yaw) * sw * 0.02 * k, 0, p.z - Math.sin(p.yaw) * sw * 0.02 * k);
+        }
+        q.setFromEuler(e);
         m4.compose(v, q, s);
         if ((p.x - pp.x) ** 2 + (p.z - pp.z) ** 2 < NEAR2 && nh < G.max) { G.hi.setMatrixAt(nh, m4); G.hi.setColorAt(nh++, p.coat); }
         else { G.lo.setMatrixAt(nl, m4); G.lo.setColorAt(nl++, p.coat); }
@@ -547,8 +557,8 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     frame = f;
     if (candlePts) {
       const cp = candlePts.geometry.attributes.position;
-      if (move || t === 0 || settle > 0) {
-        cand.forEach((p, i) => cp.setXYZ(i, p.x + Math.sin(p.yaw) * 0.28 + Math.cos(p.yaw) * 0.12, (!move && p.g === 2 ? 0.62 : 1.02) * p.h, p.z + Math.cos(p.yaw) * 0.28 - Math.sin(p.yaw) * 0.12));
+      {
+        cand.forEach((p, i) => { const y = p.ay ?? p.yaw; cp.setXYZ(i, p.x + Math.sin(y) * 0.28 + Math.cos(y) * 0.12, (!move && p.g === 2 ? 0.62 : 1.02) * p.h + Math.sin(t * 0.9 + p.ph * 4) * 0.012, p.z + Math.cos(y) * 0.28 - Math.sin(y) * 0.12); });
         cp.needsUpdate = true;
       }
       candlePts.material.size = 0.29 + Math.sin(t * 17) * 0.02;

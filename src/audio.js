@@ -61,21 +61,49 @@ export const Audio = {
     } catch { return false; }
   },
   setVolume(v) { ac(); master.gain.value = v; },
+  // slučka skutočnej nahrávky (dav, dážď, vietor) – plynulý nábeh aj dobeh
+  loop(name, vol = 0.5) {
+    try {
+      const a = document.createElement('audio'); a.src = `sfx/${name}.mp3`; a.loop = true; a.volume = 0;
+      const target = vol * (master ? master.gain.value : 0.8);
+      let v = 0, dir = 1;
+      const iv = setInterval(() => {
+        v = Math.max(0, Math.min(1, v + dir * 0.05)); a.volume = target * v;
+        if (dir > 0 && v >= 1) clearInterval(iv);
+        if (dir < 0 && v <= 0) { clearInterval(iv); a.pause(); a.src = ''; }
+      }, 80);
+      a.play().catch(() => {});
+      ambient.push({ stop: () => { dir = -1; clearInterval(iv); const iv2 = setInterval(() => { v = Math.max(0, v - 0.08); a.volume = target * v; if (v <= 0) { clearInterval(iv2); a.pause(); } }, 80); } });
+    } catch {}
+  },
+  // krok hráča – tá istá nahrávka s náhodnou výškou a hlasitosťou, aby neznela strojovo
+  step(run = false) {
+    try {
+      const pool = (this._steps ||= Array.from({ length: 4 }, () => { const a = document.createElement('audio'); a.src = 'sfx/step.mp3'; a.preload = 'auto'; return a; }));
+      const a = pool[(this._si = ((this._si || 0) + 1) % pool.length)];
+      a.currentTime = 0; a.playbackRate = (run ? 1.1 : 0.92) + Math.random() * 0.2;
+      a.volume = (run ? 0.42 : 0.3) * (0.8 + Math.random() * 0.2) * (master ? master.gain.value : 0.8);
+      a.play().catch(() => {});
+    } catch {}
+  },
   ambience(kind) {
     this.stopAmbience();
     ac();
     switch (kind) {
-      case 'candle': loopNoise({ type: 'highpass', freq: 1800, q: 0.3, gain: 0.12 }); loopNoise({ type: 'lowpass', freq: 400, gain: 0.08 }); murmur(0.08); break;
-      case 'students': murmur(0.12); loopNoise({ type: 'lowpass', freq: 250, gain: 0.05 }); break;
-      case 'square': murmur(0.22); loopNoise({ type: 'lowpass', freq: 300, gain: 0.07, lfo: 0.1 }); break;
-      case 'strike': loopNoise({ brown: true, type: 'lowpass', freq: 120, gain: 0.25 }); murmur(0.07); break;
-      case 'border': loopNoise({ type: 'bandpass', freq: 600, q: 0.3, gain: 0.05, lfo: 0.08 }); murmur(0.1); break;
+      case 'candle': this.loop('rain', 0.55); this.loop('crowd', 0.22); loopNoise({ type: 'lowpass', freq: 400, gain: 0.04 }); break;
+      case 'students': this.loop('crowd', 0.4); loopNoise({ type: 'lowpass', freq: 250, gain: 0.04 }); break;
+      case 'square': this.loop('crowd', 0.65); loopNoise({ type: 'lowpass', freq: 300, gain: 0.05, lfo: 0.1 }); break;
+      case 'strike': loopNoise({ brown: true, type: 'lowpass', freq: 120, gain: 0.25 }); this.loop('crowd', 0.28); break;
+      case 'border': this.loop('wind', 0.3); this.loop('crowd', 0.3); break;
     }
   },
   stopAmbience() { ambient.forEach((a) => a.stop()); ambient = []; },
 
   sfx(name) {
     const c = ac(), t0 = c.currentTime;
+    if (name === 'car') { this.sample('car', 0.75); return; }
+    if (name === 'keys' && this.sample('keys', 0.9)) return;
+    if (name === 'water' && this.sample('water', 0.7)) return;
     if (name === 'keys') {
       // tisíce kľúčov – krátke kovové zábleskové tóny
       for (let i = 0; i < 900; i++) {

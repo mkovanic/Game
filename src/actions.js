@@ -112,7 +112,7 @@ function raid(ctx) {
     }
     g.position.set(x, 0, Math.min(44, player.z + 46)); root.add(g);
     cars.push({ g, b, hit: false, x0: x, side: x >= 0 ? 1 : -1 });
-    ctx.toast(S.car); Audio.sfx('siren');
+    ctx.toast(S.car); Audio.sfx('siren'); setTimeout(() => Audio.sfx('car'), 1600);
   };
 
   // policajný kordón postupuje do davu (smerom k pani Anne)

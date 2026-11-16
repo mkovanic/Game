@@ -64,8 +64,15 @@ Budovy sú vymodelované skriptami v Blenderi (`tools/buildings/*.py`, spoločn�
 - `dist/sfx/siren.mp3`: [Civil-defense-siren-waver.ogg](https://commons.wikimedia.org/wiki/File:Civil-defense-siren-waver.ogg) – Techtonic, public domain.
 - `dist/sfx/applause.mp3`: [Slow starting applause.ogg](https://commons.wikimedia.org/wiki/File:Slow_starting_applause.ogg) – stephan, public domain.
 - `dist/sfx/bells.mp3`: [Bells ringing in Tower of Přibyslav.ogg](https://commons.wikimedia.org/wiki/File:Bells_ringing_in_Tower_of_P%C5%99ibyslav.ogg) – Bazi, upravil Blahma, CC BY-SA 3.0 (skrátené, znormalizovaná hlasitosť).
+- `dist/sfx/crowd.mp3` (hukot davu): [360703 eguobyte large-crowd-medium-distance-stereo.wav](https://commons.wikimedia.org/wiki/File:360703_eguobyte_large-crowd-medium-distance-stereo.wav) – eguobyte, CC0 (výrez, mono).
+- `dist/sfx/rain.mp3`: [Rain (1).ogg](https://commons.wikimedia.org/wiki/File:Rain_(1).ogg) – ezwa, public domain.
+- `dist/sfx/wind.mp3`: [Howling wind.ogg](https://commons.wikimedia.org/wiki/File:Howling_wind.ogg) – Tvabutzku1234, CC0.
+- `dist/sfx/car.mp3` (auto na dlažbe): [Car on cobblestone.ogg](https://commons.wikimedia.org/wiki/File:Car_on_cobblestone.ogg) – mastermesh, public domain.
+- `dist/sfx/water.mp3` (vodné delo): [Fountain in toulouse.ogg](https://commons.wikimedia.org/wiki/File:Fountain_in_toulouse.ogg) – aldor, public domain (výrez, filter).
+- `dist/sfx/keys.mp3` (štrngot kľúčov): [Keys shaking (Gravity Sound).wav](https://commons.wikimedia.org/wiki/File:Keys_shaking_(Gravity_Sound).wav) – Gravity Sound, CC BY 4.0 (zmiešaných 10 vrstiev s posunom a zmenou výšky).
+- `dist/sfx/step.mp3` (krok hráča): [Footstep on Gravel (Gravity Sound).mp3](https://commons.wikimedia.org/wiki/File:Footstep_on_Gravel_(Gravity_Sound).mp3) – Gravity Sound, CC BY 4.0 (orezané, filter).
 
-Chemický závod a hraničný priechod sú zatiaľ procedurálne (`src/world.js`). Ostatné zvuky sú syntetizované (`src/audio.js`). Nové anglické repliky (scénky, pani Anna v kap. 2) sú nahovorené hlasmi Microsoft `en-GB-RyanNeural` / `en-GB-SoniaNeural` (`dist/voice/en-extra.mp3`).
+Chemický závod a hraničný priechod sú zatiaľ procedurálne (`src/world.js`). Zvyšné zvuky (hukot závodu, vzdialený spev, pípnutie) sú syntetizované (`src/audio.js`). Nové anglické repliky (scénky, pani Anna v kap. 2) sú nahovorené hlasmi Microsoft `en-GB-RyanNeural` / `en-GB-SoniaNeural` (`dist/voice/en-extra.mp3`).
 
 ## Nasadenie na web
 
