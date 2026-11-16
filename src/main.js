@@ -17,7 +17,7 @@ const UI = {
   sk: {
     subtitle: 'Príbeh z Nežnej revolúcie · Slovensko 1988 – 1989',
     newGame: 'Nová hra', cont: 'Pokračovať', chapters: 'Kapitoly', lang: 'Jazyk', voice: 'Dabing',
-    on: 'zapnutý', off: 'vypnutý', start: 'Začať', next: 'Ďalej', talk: 'Hovoriť', take: 'Vziať', back: 'Vráť sa za:',
+    on: 'zapnutý', off: 'vypnutý', start: 'Začať', next: 'Ďalej', talk: 'Hovoriť', take: 'Vziať', back: 'Vráť sa za:', left: 'Ešte sa porozprávaj:', goto: 'Všetko je pripravené. Choď za:',
     history: 'Čo sa naozaj stalo', paused: 'Pauza', resume: 'Pokračovať', menu: 'Hlavné menu',
     controls: '<b>WASD</b> chôdza · <b>myš</b> rozhliadanie · <b>Shift</b> beh · <b>C</b> kľaknúť si · <b>E</b> hovoriť / konať · <b>medzerník / klik</b> ďalej · <b>1–3</b> voľba · <b>L</b> jazyk · <b>Esc</b> pauza',
     disclaimer: 'Postavy sú fiktívne. Udalosti, miesta a dátumy sú skutočné – zhrnutia nájdeš na konci každej kapitoly.',
@@ -32,7 +32,7 @@ const UI = {
   en: {
     subtitle: 'A story of the Velvet Revolution · Slovakia 1988 – 1989',
     newGame: 'New game', cont: 'Continue', chapters: 'Chapters', lang: 'Language', voice: 'Voice-over',
-    on: 'on', off: 'off', start: 'Begin', next: 'Next', talk: 'Talk to', take: 'Take', back: 'Return to',
+    on: 'on', off: 'off', start: 'Begin', next: 'Next', talk: 'Talk to', take: 'Take', back: 'Return to', left: 'Still to talk to:', goto: 'Everything is ready. Go to',
     history: 'What really happened', paused: 'Paused', resume: 'Resume', menu: 'Main menu',
     controls: '<b>WASD</b> walk · <b>mouse</b> look · <b>Shift</b> run · <b>C</b> kneel · <b>E</b> talk / act · <b>space / click</b> next · <b>1–3</b> choose · <b>L</b> language · <b>Esc</b> pause',
     disclaimer: 'The characters are fictional. The events, places and dates are real – a summary follows each chapter.',
@@ -70,6 +70,9 @@ renderer.shadowMap.enabled = state.quality === 'high';
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
+// mäkké svetlo na tvár postavy počas rozhovoru; v scéne je stále (intenzita 0), aby sa neprekompilovali shadery
+const faceLight = new THREE.PointLight(0xfff1e0, 0, 5, 1.4);
+scene.add(faceLight);
 const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 900);
 camera.rotation.order = 'YXZ';
 const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }));
@@ -174,7 +177,12 @@ function refreshHud() {
   el.chapterTag.innerHTML = `<span>${chapterName(state.chapter)} · ${tr(chapterDef.title)}</span><small>${tr(chapterDef.date)} — ${tr(chapterDef.place)}</small>`;
   // rozpracovaná úloha od postavy má prednosť pred hlavnou úlohou kapitoly
   const q = chapterDef.npcs.find((n) => n.quest && asked[n.id] && !talked[n.id]);
-  const hint = q ? (state.flags[q.quest.need] ? `${L().back} <b>${tr(q.name)}</b>` : tr(q.quest.hint)) : tr(chapterDef.objective);
+  // bez rozpracovanej úlohy ukážeme, s kým sa ešte treba porozprávať, a potom ku komu ísť
+  const left = chapterDef.npcs.filter((n) => n.required && !talked[n.id]);
+  const fin = chapterDef.npcs.find((n) => n.final);
+  const hint = q ? (state.flags[q.quest.need] ? `${L().back} <b>${tr(q.name)}</b>` : tr(q.quest.hint))
+    : left.length ? `${tr(chapterDef.objective)}<br><small>${L().left} ${left.map((n) => `<b>${tr(n.name)}</b>`).join(', ')}</small>`
+      : fin && !talked[fin.id] ? `${L().goto} <b>${tr(fin.name)}</b>` : tr(chapterDef.objective);
   el.objective.innerHTML = `<b>${L().objective}:</b> ${hint}`;
   const dots = (v) => '●'.repeat(Math.max(0, Math.min(6, v))) + '○'.repeat(Math.max(0, 6 - Math.max(0, v)));
   el.stats.innerHTML = `${L().courage} <i>${dots(state.stats.courage)}</i> &nbsp; ${L().trust} <i>${dots(state.stats.trust)}</i>`;
@@ -730,11 +738,17 @@ function tick() {
 
   // NPC: dýchanie, otáčanie hlavy k hráčovi, značky
   const ready = chapterDef && allRequiredDone();
+  faceLight.intensity += ((mode === 'dialogue' ? faceLight.userData.want || 0 : 0) - faceLight.intensity) * Math.min(1, dt * 4);
   for (const n of npcs) {
     const o = n.obj, u = o.userData;
     const dx = player.x - o.position.x, dz = player.z - o.position.z;
     const d = Math.hypot(dx, dz);
     const inTalk = mode === 'dialogue' && dlg.npc === n;
+    if (inTalk) {
+      const hx = o.position.x, hz = o.position.z, dx = player.x - hx, dz = player.z - hz, dl = Math.hypot(dx, dz) || 1;
+      faceLight.position.set(hx + (dx / dl) * 0.9 - (dz / dl) * 0.35, 1.95, hz + (dz / dl) * 0.9 + (dx / dl) * 0.35);
+      faceLight.userData.want = world.night ? 2.6 : 0.9;
+    }
     let a = Math.atan2(dx, dz) - o.rotation.y;
     while (a > Math.PI) a -= Math.PI * 2;
     while (a < -Math.PI) a += Math.PI * 2;

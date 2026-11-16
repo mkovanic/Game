@@ -174,7 +174,8 @@ export function makeCharacter(look = {}) {
   root.updateMatrixWorld(true);
   const head = B.Head, wp = (b) => b.getWorldPosition(new THREE.Vector3());
   const hp = wp(head);
-  if (!HAS_HAT.test(M.name) && look.hat && look.hat !== 'none' && look.hat !== 'police') attach(head, headgear(look, M), hp);
+  // pokrývky hlavy z primitív na modeloch Rocketbox nesedeli (zakrývali tvár) – postavy v dialógoch ich nenosia
+  if (look.forceHat && !HAS_HAT.test(M.name) && look.hat && look.hat !== 'none' && look.hat !== 'police') attach(head, headgear(look, M), hp);
   if (look.scarf) {
     const s = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.034, 8, 18), stdm(look.scarf, { roughness: 1 }));
     s.rotation.x = Math.PI / 2; s.castShadow = true;
