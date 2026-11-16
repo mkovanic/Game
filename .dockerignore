@@ -1,0 +1,6 @@
+node_modules
+.git
+assets
+site
+tools/buildings
+*.md

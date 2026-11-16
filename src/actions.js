@@ -10,7 +10,7 @@ import { makeCharacter } from './people.js';
 
 const TXT = {
   sk: {
-    raidStart: '22:30 – polícia zasahuje', raidObj: 'Vydrž na námestí a chráň plameň sviečky. Vyhýbaj sa vodným delám a autám. <kbd>C</kbd> – kľakni si a kry plameň telom.',
+    raidStart: '18:05 – polícia zasahuje', raidObj: 'Vydrž na námestí a chráň plameň sviečky. Vyhýbaj sa vodným delám a autám. <kbd>C</kbd> – kľakni si a kry plameň telom.',
     lit: 'Sviečka horí', out: 'Sviečka zhasla – stlač <kbd>F</kbd>', lighting: 'Zapaľuješ…', car: 'Pozor, auto!', hit: 'Zrazilo ťa auto',
     wet: 'Zasiahlo ťa vodné delo', baton: 'Kordón ťa odtlačil obuškami', anna: 'Pani Anna spadla – pomôž jej vstať', annaE: '<kbd>E</kbd> Pomôcť pani Anne', annaOk: 'Ďakujem ti, synku.',
     raidEnd: (p) => `Vydržali ste. Plameň horel ${p} % času.`, time: 'Do konca zásahu',
@@ -23,7 +23,7 @@ const TXT = {
     good: 'Presne!', keysEnd: 'Celé námestie štrngá kľúčmi. Posledné zvonenie.', keysEndWeak: 'Kľúče zneli námestím.',
   },
   en: {
-    raidStart: '10:30 pm – the police move in', raidObj: 'Hold your ground and protect the candle flame. Avoid the water cannons and cars. <kbd>C</kbd> – kneel and shield the flame with your body.',
+    raidStart: '6:05 pm – the police move in', raidObj: 'Hold your ground and protect the candle flame. Avoid the water cannons and cars. <kbd>C</kbd> – kneel and shield the flame with your body.',
     lit: 'Candle is burning', out: 'Candle is out – press <kbd>F</kbd>', lighting: 'Lighting…', car: 'Watch out, a car!', hit: 'A car knocked you down',
     wet: 'The water cannon hit you', baton: 'The cordon shoved you back with batons', anna: 'Mrs Anna has fallen – help her up', annaE: '<kbd>E</kbd> Help Mrs Anna', annaOk: 'Thank you, son.',
     raidEnd: (p) => `You held on. The flame burned ${p}% of the time.`, time: 'Until the raid ends',

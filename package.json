@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "3D príbehová hra z Nežnej revolúcie (Slovensko 1988–1989) – Candles and Keys",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "site": "node tools/build-site.mjs"
   },
   "repository": {
     "type": "git",

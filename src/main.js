@@ -54,6 +54,7 @@ try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
   if (s) { Object.assign(state, s.settings || {}); snapshot = s.snapshot || null; state.maxChapter = s.maxChapter || 0; }
 } catch {}
+{ const q = new URLSearchParams(location.search).get('lang'); if (q === 'sk' || q === 'en') state.lang = q; } // odkaz z úvodnej stránky
 function save() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify({ settings: { lang: state.lang, voice: state.voice, quality: state.quality }, snapshot, maxChapter: state.maxChapter })); } catch {}
 }

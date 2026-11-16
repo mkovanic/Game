@@ -1,8 +1,8 @@
-# Slovenský dabing cez Microsoft Edge neurálne hlasy (balík edge-tts).
+# Dabing (SK + EN) cez Microsoft Edge neurálne hlasy (balík edge-tts).
 #   node tools-export.mjs > lines.json
 #   python3 tools-voice.py lines.json                 # pregeneruje dist/voice/sk-*.mp3 + manifest
 #   python3 tools-voice.py lines.json --sample OUT k1 k2 …   # len ukážky vybraných replík
-# Angličtina (Kokoro) zostáva; v manifeste sa prepíšu len kľúče sk/*.
+# Slovenčina aj angličtina sa generujú celé nanovo (Microsoft neurálne hlasy).
 import asyncio, edge_tts, edge_tts.communicate as C, inspect, textwrap, json, subprocess, os, sys, tempfile
 
 # edge-tts natvrdo žiada 48 kb/s – vyžiadame 96 kb/s (neurálny hlas je natívne 24 kHz).
@@ -24,7 +24,10 @@ V = {'narrator': (M, '-6%', '-4Hz'), 'player': (M, '+0%', '+4Hz'), 'katka': (F, 
      'gerti': (F, '-2%', '-4Hz'), 'vlado': (M, '-7%', '-9Hz'), 'zuzana': (F, '+5%', '+6Hz'), 'milan': (M, '+7%', '+5Hz'),
      'jozef': (M, '-8%', '-12Hz'), 'rudolf': (M, '-11%', '-5Hz')}
 
-EN = {'m': 'en-GB-RyanNeural', 'f': 'en-GB-SoniaNeural'}  # len pre nové repliky, ktoré Kokoro dabing nemá
+# anglický dabing: britské neurálne hlasy, rovnaké jemné rozlíšenie postáv ako v slovenčine
+EN = {'narrator': 'en-GB-RyanNeural', 'player': 'en-GB-ThomasNeural', 'katka': 'en-GB-SoniaNeural', 'anna': 'en-GB-LibbyNeural',
+      'zuzka': 'en-GB-LibbyNeural', 'zuzana': 'en-GB-LibbyNeural', 'gerti': 'en-GB-SoniaNeural'}
+EN_M = ['en-GB-RyanNeural', 'en-GB-ThomasNeural']
 
 def norm(t):
     for a, b in [('„', ''), ('“', ''), ('”', ''), ('"', ''), ('ŠtB', 'eštébé'), ('VPN', 'vépéen'), ('SNP', 'esenpé'),
@@ -36,7 +39,7 @@ def norm(t):
 
 async def tts(text, who, mp3, lang='sk'):
     v, rate, pitch = V[who]
-    if lang == 'en': v = EN['f' if v == F else 'm']
+    if lang == 'en': v = EN.get(who) or EN_M[sorted(V).index(who) % 2]
     for i in range(4):
         try: return await edge_tts.Communicate(norm(text) if lang == 'sk' else text.replace('ŠtB', 'S T B'), v, rate=rate, pitch=pitch).save(mp3)
         except Exception as e:
@@ -58,28 +61,18 @@ async def main():
             await tts(l['sk'], l['who'], f'{tmp}/r.mp3'); ff('-i', f'{tmp}/r.mp3', '-af', AF, *ENC, f'{out}/{k}.mp3')
             print(k, l['who'])
         return
-    man = json.load(open(MAN)); man = {k: v for k, v in man.items() if not k.startswith('sk/')}
-    for ch in dict.fromkeys(l['ch'] for l in lines):
-        pos = 0.0; lst = []
-        for i, l in enumerate(x for x in lines if x['ch'] == ch):
-            raw, wav = f'{tmp}/{ch}-{i}.mp3', f'{tmp}/{ch}-{i}.wav'
-            await tts(l['sk'], l['who'], raw); ff('-i', raw, '-af', AF, '-ar', '44100', '-ac', '1', wav)
-            d = dur(wav); man[f"sk/{l['key']}"] = [f'sk-{ch}.mp3', round(pos, 3), round(d - 0.45, 3)]
-            pos += d; lst.append(f"file '{wav}'")
-        open(f'{tmp}/{ch}.txt', 'w').write('\n'.join(lst))
-        ff('-f', 'concat', '-safe', '0', '-i', f'{tmp}/{ch}.txt', *ENC, f'{OUT}/sk-{ch}.mp3')
-        print('sk', ch, round(pos), flush=True)
-    extra = [l for l in lines if f"en/{l['key']}" not in man or man[f"en/{l['key']}"][0] == 'en-extra.mp3']
-    if extra:
-        pos = 0.0; lst = []
-        for i, l in enumerate(extra):
-            raw, wav = f'{tmp}/en-{i}.mp3', f'{tmp}/en-{i}.wav'
-            await tts(l['en'], l['who'], raw, 'en'); ff('-i', raw, '-af', AF, '-ar', '44100', '-ac', '1', wav)
-            d = dur(wav); man[f"en/{l['key']}"] = ['en-extra.mp3', round(pos, 3), round(d - 0.45, 3)]
-            pos += d; lst.append(f"file '{wav}'")
-        open(f'{tmp}/en-extra.txt', 'w').write('\n'.join(lst))
-        ff('-f', 'concat', '-safe', '0', '-i', f'{tmp}/en-extra.txt', *ENC, f'{OUT}/en-extra.mp3')
-        print('en extra', len(extra), round(pos), flush=True)
+    man = {}
+    for lang in ('sk', 'en'):
+        for ch in dict.fromkeys(l['ch'] for l in lines):
+            pos = 0.0; lst = []
+            for i, l in enumerate(x for x in lines if x['ch'] == ch):
+                raw, wav = f'{tmp}/{lang}-{ch}-{i}.mp3', f'{tmp}/{lang}-{ch}-{i}.wav'
+                await tts(l[lang], l['who'], raw, lang); ff('-i', raw, '-af', AF, '-ar', '44100', '-ac', '1', wav)
+                d = dur(wav); man[f"{lang}/{l['key']}"] = [f'{lang}-{ch}.mp3', round(pos, 3), round(d - 0.45, 3)]
+                pos += d; lst.append(f"file '{wav}'")
+            open(f'{tmp}/{lang}-{ch}.txt', 'w').write('\n'.join(lst))
+            ff('-f', 'concat', '-safe', '0', '-i', f'{tmp}/{lang}-{ch}.txt', *ENC, f'{OUT}/{lang}-{ch}.mp3')
+            print(lang, ch, round(pos), flush=True)
     json.dump(man, open(MAN, 'w'))
     print('DONE')
 

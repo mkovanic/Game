@@ -16,9 +16,9 @@ export const CHAPTERS = [
   {
     id: 'candle',
     action: 'raid',
-    brief: { sk: "Je pol jedenástej. Vodné delá sa rozbehli a autá vchádzajú medzi ľudí. Nikto neuteká. Drž sviečku a vydrž.", en: "It is half past ten. The water cannons start and cars drive in among the people. Nobody runs. Hold your candle and endure." },
+    brief: { sk: "Je krátko po šiestej večer. Vodné delá sa rozbehli a autá vchádzajú medzi ľudí. Nikto neuteká. Drž sviečku a vydrž.", en: "It is just after six in the evening. The water cannons start and cars drive in among the people. Nobody runs. Hold your candle and endure." },
     scene: 'candle',
-    date: { sk: '25. marca 1988, 22:00', en: '25 March 1988, 10 pm' },
+    date: { sk: '25. marca 1988, 18:00', en: '25 March 1988, 6 pm' },
     place: { sk: 'Hviezdoslavovo námestie, Bratislava', en: 'Hviezdoslav Square, Bratislava' },
     title: { sk: 'Sviečková manifestácia', en: 'The Candle Demonstration' },
     intro: {
@@ -90,7 +90,7 @@ export const CHAPTERS = [
         ] },
       k3: { who: 'katka', sk: 'Ďakujem. Raz si na tento večer spomenieme ako na začiatok.', en: "Thank you. One day we'll remember tonight as the beginning.", next: 'k5' },
       k4: { who: 'katka', sk: 'Možno máš pravdu. Ale niekto musí stáť prvý. Dnes sme to my.', en: "Maybe you're right. But somebody has to stand first. Tonight it's us.", next: 'k5' },
-      k5: { who: 'narrator', sk: 'O pol jedenástej zapnú vodné delá. Ľudia sa nerozbehnú – kľačia ďalej, kým ich policajti nerozoženú.', en: 'At half past ten the water cannons start. People do not run – they keep kneeling until the police drive them apart.', sfx: 'water' },
+      k5: { who: 'narrator', sk: 'Krátko po šiestej sa rozbehnú vodné delá. Ľudia neutekajú. Kľačia a modlia sa ďalej, kým ich policajti nerozoženú.', en: 'Shortly after six the water cannons start. People do not run. They keep kneeling and praying until the police drive them apart.', sfx: 'water' },
       k_after: { who: 'katka', sk: 'Drž sa pri mne.', en: 'Stay close to me.' },
     },
     history: {
@@ -177,7 +177,7 @@ export const CHAPTERS = [
       k3b: { who: 'katka', sk: 'Jano… nikdy im nič nepodpisuj. Nikdy. Sľúb mi to.', en: 'Jano… never sign anything for them. Never. Promise me.',
         choices: [
           { sk: 'Sľubujem.', en: 'I promise.', next: 'k4b', fx: { trust: 1 }, flag: 'promised' },
-          { sk: 'Ty nevieš, ako mi vyhrážal.', en: "You don't know how he threatened me.", next: 'k4c' },
+          { sk: 'Ty nevieš, ako sa mi vyhrážal.', en: "You don't know how he threatened me.", next: 'k4c' },
         ] },
       k4b: { who: 'katka', sk: 'Verím ti.', en: 'I believe you.', next: 'k5' },
       k4c: { who: 'katka', sk: 'Viem. Vyhrážajú sa všetkým. Práve preto sme dnes tu.', en: "I know. They threaten everyone. That's exactly why we're here today.", next: 'k5' },
@@ -250,7 +250,7 @@ export const CHAPTERS = [
           { sk: 'Prečo ľudia štrngajú kľúčmi?', en: 'Why are people jingling their keys?', next: 'i3' },
         ] },
       i2: { who: 'igor', sk: 'Vznikla pred pár dňami v Umeleckej besede. Herci, vedci, výtvarníci, študenti. Žiadne zbrane, žiadna nenávisť. Len verejnosť.', en: 'It was founded a few days ago at the Umelecká beseda. Actors, scientists, artists, students. No weapons, no hatred. Just the public.', next: 'i4' },
-      i3: { who: 'igor', sk: 'To je zvonček na rozlúčku. Súdruhovia, zazvonilo vám – môžete ísť domov.', en: "It's the closing bell. Comrades, the bell has rung for you – you may go home.", sfx: 'keys', next: 'i4' },
+      i3: { who: 'igor', sk: 'To je zvonenie na rozlúčku. Súdruhovia, odzvonilo vám. Môžete ísť domov.', en: "It's the closing bell. Comrades, the bell has rung for you – you may go home.", sfx: 'keys', next: 'i4' },
       i4: { who: 'igor', sk: 'Katka je pri tribúne. Choď, len choď – a nestrácaj humor. Ten nám nemôžu zakázať.', en: "Katka is by the stage. Go on – and don't lose your sense of humour. That's one thing they can't ban." },
       an1: { who: 'anna', sk: 'Synku! To si ty, čo si ma vtedy v marci zdvihol zo zeme. Vidíš? Vtedy nás bolo pár tisíc. Dnes je nás plné námestie.', en: 'Son! You are the one who lifted me off the ground back in March. See? There were a few thousand of us then. Today the whole square is full.', fx: { trust: 1 } },
       an_after: { who: 'anna', sk: 'Nech ťa Pán Boh ochraňuje, synku.', en: 'God keep you, son.' },
@@ -262,7 +262,7 @@ export const CHAPTERS = [
           { sk: 'Som rád, že si tu, oci.', en: "I'm glad you're here, Dad.", next: 'o3', fx: { trust: 1 } },
           { sk: 'Nebojíš sa o prácu?', en: "Aren't you worried about your job?", next: 'o4' },
         ] },
-      o3: { who: 'otec', sk: 'Mama ti posiela čaj v termoske. A vraj si máš obliecť čiapku.', en: 'Mum sent you tea in a thermos. And she says you should put your hat on.', next: 'o5' },
+      o3: { who: 'otec', sk: 'Mama ti posiela čaj v termoske. A odkazuje, že si máš dať čiapku.', en: 'Mum sent you tea in a thermos. And she says you should put your hat on.', next: 'o5' },
       o4: { who: 'otec', sk: 'Bojím sa. Ale v pondelok je generálny štrajk. Ak sa pridá celý závod, nemôžu vyhodiť všetkých.', en: "I am. But on Monday there's a general strike. If the whole plant joins, they can't fire everyone.", next: 'o5' },
       o5: { who: 'otec', sk: 'Choď za Katkou. Ja tu postojím s chlapmi z dielne.', en: "Go and find Katka. I'll stand here with the lads from the workshop." },
       o_after: { who: 'otec', sk: 'Daj na seba pozor, synak.', en: 'Take care of yourself, son.' },
@@ -282,7 +282,7 @@ export const CHAPTERS = [
       k_after: { who: 'katka', sk: 'Bol si skvelý.', en: 'You were great.' },
     },
     history: {
-      sk: '19. novembra 1989 vznikla v bratislavskej Umeleckej besede Verejnosť proti násiliu (VPN) – slovenský náprotivok pražského Občianskeho fóra. Medzi jej zakladateľmi boli umelci, vedci a aktivisti. Od 20. novembra sa na Námestí SNP konali každodenné mítingy, na ktoré prichádzali desaťtisíce ľudí. Štrngnutie kľúčmi sa stalo symbolom revolúcie – „zvonením“ ľudia dávali najavo, že komunistickej moci odzvonilo. Študenti a divadlá vstúpili do štrajku.',
+      sk: '19. novembra 1989 vznikla v bratislavskej Umeleckej besede Verejnosť proti násiliu (VPN) – slovenský náprotivok pražského Občianskeho fóra. Medzi jej zakladateľmi boli umelci, vedci a aktivisti. Od 20. novembra sa na Námestí SNP konali každodenné mítingy, na ktoré prichádzali desaťtisíce ľudí. Štrnganie kľúčmi sa stalo symbolom revolúcie – „zvonením“ ľudia dávali najavo, že komunistickej moci odzvonilo. Študenti a divadlá vstúpili do štrajku.',
       en: 'On 19 November 1989, Public Against Violence (VPN) was founded at the Umelecká beseda in Bratislava – the Slovak counterpart of Prague\'s Civic Forum. Its founders included artists, scientists and activists. From 20 November onwards, daily rallies took place on SNP Square, attended by tens of thousands of people. Jingling keys became a symbol of the revolution – a “ringing bell” telling the communist rulers that their time was up. Students and theatres went on strike.',
     },
   },
@@ -414,9 +414,9 @@ export const CHAPTERS = [
       ru1: { who: 'rudolf', sk: "Prepáčte, mladý muž… vypadla mi fotografia. Niekde tu v snehu pri ceste. Bez okuliarov ju nenájdem.", en: "Excuse me, young man… I dropped a photograph. Somewhere here in the snow by the road. I cannot find it without my glasses.", next: 'ru2' },
       ru2: { who: 'rudolf', sk: "Je na nej moja sestra. V štyridsiatom ôsmom ostala na druhej strane. Štyridsaťjeden rokov som ju videl len na tom papieri.", en: "It shows my sister. In 1948 she stayed on the other side. For forty-one years I have seen her only on that piece of paper." },
       ru_wait: { who: 'rudolf', sk: "Fotografia… musela mi vypadnúť pri ceste, na druhej strane.", en: "The photograph… I must have dropped it by the road, on the other side." },
-      ru3: { who: 'rudolf', sk: "To je ona. Marta. Býva v Hainburgu, odtiaľto je to šesť kilometrov. Šesť kilometrov a štyridsaťjeden rokov.", en: "That is her. Marta. She lives in Hainburg, six kilometres from here. Six kilometres and forty-one years.", fx: { trust: 1 }, next: 'ru4' },
+      ru3: { who: 'rudolf', sk: "To je ona. Marta. Býva v Hainburgu, odtiaľto je to pár kilometrov. Pár kilometrov a štyridsaťjeden rokov.", en: "That is her. Marta. She lives in Hainburg, a few kilometres from here. A few kilometres and forty-one years.", fx: { trust: 1 }, next: 'ru4' },
       ru4: { who: 'rudolf', sk: "Dnes tam prejdem peši. Poďte, nech na to nie som sám.", en: "Today I will walk there. Come, so that I am not alone in it." },
-      ru_after: { who: 'rudolf', sk: "Šesť kilometrov. Dnes ich prejdem.", en: "Six kilometres. Today I will walk them." },
+      ru_after: { who: 'rudolf', sk: "Pár kilometrov. Dnes ich prejdem.", en: "A few kilometres. Today I will walk them." },
       g1: { who: 'guard', sk: 'Dvadsať rokov som strážil tento drôt. Mali sme rozkaz zastaviť každého, kto by chcel prejsť. Za každú cenu.', en: 'For twenty years I guarded this wire. Our orders were to stop anyone who tried to cross. At any cost.',
         choices: [
           { sk: 'Ľutujete niečo?', en: 'Do you regret anything?', next: 'g2' },

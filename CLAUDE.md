@@ -49,3 +49,6 @@ Na ladenie je v konzole `window.__game` (stav, npcs, startDialogue, advance, cho
 - Headless test s reálnym GPU: Playwright `channel: 'chrome'` (swiftshader je príliš pomalý).
 - Overenie v prehliadači: `window.__game.loadChapter(i)` načíta kapitolu bez menu; veľkosť `dist/index.html` držať do ~25 MB (teraz ~8 MB).
 - Každý nový zdroj (model, fotka, textúra) zapíš do README s autorom, licenciou a odkazom.
+- **Nasadenie:** `npm run site` (tools/build-site.mjs) → `site/`; `Dockerfile` (nginx) + `docker-compose.stack.yml` (Portainer Swarm,
+  port 5496, doména cez Nginx Proxy Manager). Cieľ: `https://17november.kovanic.sk`. Obraz: `registry.kovanic.sk/matokovanic/sviecky-a-kluce:<verzia>`
+  (nikdy neprepisuj už pushnutý tag). Snímky pre web: `web/img/`. Dabing je teraz SK aj EN cez edge-tts (Kokoro sa už nepoužíva).

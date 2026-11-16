@@ -22,9 +22,9 @@ Ovládanie: **WASD** chôdza · **myš** rozhliadanie (klikni do hry) · **Shift
 
 ### Dabing (slovenčina / angličtina)
 
-Všetky repliky sú **vopred nahrané neurálnymi hlasmi** (`dist/voice/*.mp3`, 44,1 kHz / 96 kb/s) – fungujú v každom prehliadači bez nastavovania. Slovenčina: Microsoft Edge neurálne hlasy `sk-SK-LukasNeural` (muži) a `sk-SK-ViktoriaNeural` (ženy) cez balík [edge-tts](https://github.com/rany2/edge-tts); postavy sa líšia len jemne rýchlosťou a výškou. Angličtina: Kokoro (rôzni hovoriaci).
+Všetky repliky sú **vopred nahrané neurálnymi hlasmi Microsoft** (`dist/voice/*.mp3`, 44,1 kHz / 96 kb/s) cez balík [edge-tts](https://github.com/rany2/edge-tts) – fungujú v každom prehliadači bez nastavovania. Slovenčina: `sk-SK-LukasNeural` a `sk-SK-ViktoriaNeural`; angličtina: `en-GB-RyanNeural`, `en-GB-ThomasNeural`, `en-GB-SoniaNeural`, `en-GB-LibbyNeural`. Postavy sa líšia len jemne rýchlosťou a výškou hlasu.
 
-Slovenský dabing sa po úprave textov v `src/story.js` pregeneruje takto: `node tools-export.mjs > lines.json` a `python3 tools-voice.py lines.json` (vyžaduje `pip install edge-tts`, `ffmpeg` a internet). Ukážky jednotlivých replík: `python3 tools-voice.py lines.json --sample out/ candle.k1`.
+Po úprave textov v `src/story.js` sa dabing pregeneruje takto: `node tools-export.mjs > lines.json` a `python3 tools-voice.py lines.json` (vyžaduje `pip install edge-tts`, `ffmpeg` a internet; trvá 10 – 20 minút). Ukážky jednotlivých replík: `python3 tools-voice.py lines.json --sample out/ candle.k1`.
 
 ### 3D postavy
 
@@ -66,6 +66,21 @@ Budovy sú vymodelované skriptami v Blenderi (`tools/buildings/*.py`, spoločn�
 - `dist/sfx/bells.mp3`: [Bells ringing in Tower of Přibyslav.ogg](https://commons.wikimedia.org/wiki/File:Bells_ringing_in_Tower_of_P%C5%99ibyslav.ogg) – Bazi, upravil Blahma, CC BY-SA 3.0 (skrátené, znormalizovaná hlasitosť).
 
 Chemický závod a hraničný priechod sú zatiaľ procedurálne (`src/world.js`). Ostatné zvuky sú syntetizované (`src/audio.js`). Nové anglické repliky (scénky, pani Anna v kap. 2) sú nahovorené hlasmi Microsoft `en-GB-RyanNeural` / `en-GB-SoniaNeural` (`dist/voice/en-extra.mp3`).
+
+## Nasadenie na web
+
+Na web ide hra spolu s úvodnou stránkou a podstránkami o historických udalostiach (kvôli vyhľadávačom):
+
+```bash
+npm run build                                  # hra -> dist/index.html
+SITE_URL=https://17november.kovanic.sk npm run site   # web -> site/ (úvod SK/EN, /historia/…, /hra/, sitemap.xml, robots.txt)
+docker buildx build --platform linux/amd64 --build-arg SITE_URL=https://17november.kovanic.sk \
+  -t registry.kovanic.sk/matokovanic/sviecky-a-kluce:1.0.0 --push .
+```
+
+`docker-compose.stack.yml` je stack pre Portainer (Swarm): nginx na porte 80, von publikovaný port 5496; doménu naň smeruje Nginx Proxy Manager. Web je čisto statický, bez premenných prostredia. Snímky na úvodnej stránke sú vo `web/img/`.
+
+SEO: vlastný `<title>`, popis, kanonická adresa, `hreflang` SK/EN, Open Graph, štruktúrované dáta (`VideoGame`, `Article`), `sitemap.xml`, `robots.txt`; texty podstránok sa berú z `src/story.js` (historické karty).
 
 ## Vývoj
 

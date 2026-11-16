@@ -1,0 +1,27 @@
+# ═══════════════════════════════════════════════════════════════════════
+#  Sviečky a kľúče – stack pre Portainer / Docker Swarm
+#
+#  Nasadenie:  Portainer → Stacks → Add stack → Web editor (obsah tohto súboru) → Deploy
+#
+#  Web beží vnútri na porte 80, von je publikovaný na 5496.
+#  V Nginx Proxy Manageri nasmeruj 17november.kovanic.sk na http://<IP-hostiteľa>:5496
+#  (Websockets netreba; zapni „Force SSL“ a Let's Encrypt certifikát).
+#  Žiadne premenné prostredia ani tajomstvá – je to čisto statický web.
+# ═══════════════════════════════════════════════════════════════════════
+
+services:
+  web:
+    image: registry.kovanic.sk/matokovanic/sviecky-a-kluce:1.0.0
+    ports:
+      - "5496:80"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      update_config:
+        order: start-first
+        failure_action: rollback
+      resources:
+        limits:
+          memory: 128M
