@@ -778,4 +778,4 @@ el.menu.innerHTML = '<div class="menu-inner"><div class="sub">Načítavam… / L
 Promise.all([initPeople(), initBuildings()]).then(() => { openMenu(); tick(); });
 
 // ladenie / automatické testy
-window.__game = { voiceDebug, startAction, get action() { return action; }, people: peopleDebug, loadChapter: (i) => { show(el.menu, false); loadChapter(i); }, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };
+window.__game = { get world() { return world; }, voiceDebug, startAction, get action() { return action; }, people: peopleDebug, loadChapter: (i) => { show(el.menu, false); loadChapter(i); }, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };

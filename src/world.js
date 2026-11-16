@@ -524,7 +524,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
           let tx = 0;
           if (rep) for (const r of rep) {
             const dx = p.bx - r.x, dz = p.z - r.z;
-            if (Math.abs(dz) < r.r + 1.2 && Math.abs(dx) < r.r) tx = (dx >= 0 ? 1 : -1) * (r.r - Math.abs(dx)) * Math.min(1, (r.r + 1.2 - Math.abs(dz)) / 1.2);
+            if (Math.abs(dz) < r.r + 1.2 && Math.abs(dx) < r.r) { const sg = Math.abs(p.ox) > 0.05 ? Math.sign(p.ox) : (dx >= 0 ? 1 : -1), v = (sg * r.r - dx) * Math.min(1, (r.r + 1.2 - Math.abs(dz)) / 1.2); if (Math.abs(v) > Math.abs(tx)) tx = v; }
           }
           p.ox += (tx - p.ox) * Math.min(1, dt * 7);
           p.x = p.bx + p.ox; circles[p.ci].x = p.x;

@@ -100,9 +100,18 @@ function raid(ctx) {
     const g = makeVehicle('vb', { night: true }); g.rotation.y = Math.PI;   // ide smerom k -Z
     const b = blueGlow(); b.position.set(0, 1.62, -0.2); b.scale.setScalar(2.2); g.add(b);
     for (const hx of [-0.6, 0.6]) { const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glowSprite('255,245,210'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); h.position.set(hx, 0.67, 2.15); h.scale.setScalar(1.3); g.add(h); }
-    const x = Math.max(-10, Math.min(10, player.x + (Math.random() - 0.5) * 1.5));
+    // jazdný pruh mieri na hráča, ale vyhne sa postavám, ktoré nevedia uhnúť (sochu auto obíde oblúkom)
+    const blocks = [...ctx.npcs.map((n) => ({ x: n.obj.position.x, r: 1.7 }))];
+    // kordón pochoduje naprieč námestím – auto prejde až za jeho čelom
+    const front = t > 6 ? Math.min(6.6, Math.max(...ctx.world.police.map((c) => c.obj.position.x)) + 0.42 * 7) + 1.7 : -99;
+    const free = (v) => v >= front && blocks.every((o) => Math.abs(v - o.x) >= o.r);
+    let x = Math.max(-10, Math.min(10, player.x + (Math.random() - 0.5) * 1.5));
+    for (let d = 0; d <= 12 && !free(x); d += 0.25) {
+      const c = [x + d, x - d].filter((v) => Math.abs(v) <= 10 && free(v));
+      if (c.length) { x = c[0]; break; }
+    }
     g.position.set(x, 0, Math.min(44, player.z + 46)); root.add(g);
-    cars.push({ g, b, hit: false });
+    cars.push({ g, b, hit: false, x0: x, side: x >= 0 ? 1 : -1 });
     ctx.toast(S.car); Audio.sfx('siren');
   };
 
@@ -175,6 +184,13 @@ function raid(ctx) {
       if (t > nextCar && t < DUR - 8) { nextCar = t + 9 + Math.random() * 4; spawnCar(); }
       for (const c of cars) {
         c.g.position.z -= 7.5 * dt;
+        // socha stojí na (0, -12): auto ju plynulo obíde
+        if (Math.abs(c.x0) < 3.2) {
+          const z = c.g.position.z, u = Math.max(0, Math.min(1, z > -12 ? (6 - z) / 12 : (z + 30) / 12)), k = u * u * (3 - 2 * u);
+          const nx = c.x0 + c.side * (3.2 - Math.abs(c.x0)) * k;
+          c.g.rotation.y = Math.PI - Math.max(-0.35, Math.min(0.35, (nx - c.g.position.x) / (7.5 * dt + 1e-6)));
+          c.g.position.x = nx;
+        }
         c.b.visible = Math.sin(t * 12) > 0;
         const dx = player.x - c.g.position.x, dz = player.z - c.g.position.z;
         if (!c.hit && Math.abs(dx) < 1.25 && Math.abs(dz) < 2.5) {
@@ -198,7 +214,7 @@ function raid(ctx) {
         }
       }
 
-      ctx.world.setRepel([...cars.map((c) => ({ x: c.g.position.x, z: c.g.position.z - 2, r: 1.9 })), ...(marching ? cordon.map((c) => ({ x: c.obj.position.x + 0.4, z: c.obj.position.z, r: 1.1 })) : [])]);
+      ctx.world.setRepel([...cars.flatMap((c) => [{ x: c.g.position.x, z: c.g.position.z - 2, r: 1.9 }, { x: c.g.position.x, z: c.g.position.z + 1.6, r: 1.9 }]), ...(marching ? cordon.map((c) => ({ x: c.obj.position.x + 0.4, z: c.obj.position.z, r: 1.1 })) : [])]);
 
       // pani Anna
       if (anna) {
@@ -227,6 +243,7 @@ function raid(ctx) {
         ctx.finish({ fx, flag: annaState === 2 ? 'helpedAnna' : null, text: S.raidEnd(pct) });
       }
     },
+    get cars() { return cars; },
     key(code) {
       if (done) return;
       if (code === 'KeyF' && !lit && relight <= 0) relight = RELIGHT;
