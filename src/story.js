@@ -16,6 +16,7 @@ export const CHAPTERS = [
   {
     id: 'candle',
     action: 'raid',
+    brief: { sk: "Je pol jedenástej. Vodné delá sa rozbehli a autá vchádzajú medzi ľudí. Nikto neuteká. Drž sviečku a vydrž.", en: "It is half past ten. The water cannons start and cars drive in among the people. Nobody runs. Hold your candle and endure." },
     scene: 'candle',
     date: { sk: '25. marca 1988, 22:00', en: '25 March 1988, 10 pm' },
     place: { sk: 'Hviezdoslavovo námestie, Bratislava', en: 'Hviezdoslav Square, Bratislava' },
@@ -88,6 +89,7 @@ export const CHAPTERS = [
   {
     id: 'students',
     action: 'chase',
+    brief: { sk: "Katka ti strčí do ruky zväzok letákov. Rozdaj ich, kým si ťa muž v koženom kabáte nenájde.", en: "Katka presses a bundle of leaflets into your hand. Hand them out before the man in the leather coat finds you." },
     scene: 'students',
     date: { sk: '16. novembra 1989, popoludnie', en: '16 November 1989, afternoon' },
     place: { sk: 'Pred univerzitou, Bratislava', en: 'Outside the university, Bratislava' },
@@ -164,6 +166,7 @@ export const CHAPTERS = [
   {
     id: 'square',
     action: 'keys',
+    brief: { sk: "Státisíce rúk vyťahujú z vreciek kľúče. Pridaj sa. Odzvoňte im.", en: "Hundreds of thousands of hands pull keys from their pockets. Join in. Ring them out." },
     scene: 'square',
     date: { sk: 'Koniec novembra 1989, večer', en: 'Late November 1989, evening' },
     place: { sk: 'Námestie SNP, Bratislava', en: 'SNP Square, Bratislava' },
@@ -178,6 +181,11 @@ export const CHAPTERS = [
     },
     spawn: [0, 34],
     npcs: [
+      { // príde len vtedy, ak jej hráč v prológu pomohol vstať
+        id: 'anna', name: { sk: 'Pani Anna', en: 'Mrs Anna' }, pos: [-3, 27], cond: (st) => !!st.flags.helpedAnna,
+        look: { model: 'Business_Female_03', coat: 0x3b3550, pants: 0x2a2a2a, hair: 0xb8b8b8, hat: 'scarf', hatColor: 0x6b2a3a },
+        voice: { g: 'f', pitch: 0.9, rate: 0.9 }, start: 'an1', after: 'an_after',
+      },
       {
         id: 'igor', name: { sk: 'Herec Igor', en: 'Igor, actor' }, pos: [-7, 22],
         look: { model: 'Male_Adult_07', coat: 0x5b2a2a, pants: 0x222222, hair: 0x6b5a4a, hat: 'none', scarf: 0x1f5faa },
@@ -203,6 +211,8 @@ export const CHAPTERS = [
       i2: { who: 'igor', sk: 'Vznikla pred pár dňami v Umeleckej besede. Herci, vedci, výtvarníci, študenti. Žiadne zbrane, žiadna nenávisť. Len verejnosť.', en: 'It was founded a few days ago at the Umelecká beseda. Actors, scientists, artists, students. No weapons, no hatred. Just the public.', next: 'i4' },
       i3: { who: 'igor', sk: 'To je zvonček na rozlúčku. Súdruhovia, zazvonilo vám – môžete ísť domov.', en: "It's the closing bell. Comrades, the bell has rung for you – you may go home.", sfx: 'keys', next: 'i4' },
       i4: { who: 'igor', sk: 'Katka je pri tribúne. Choď, len choď – a nestrácaj humor. Ten nám nemôžu zakázať.', en: "Katka is by the stage. Go on – and don't lose your sense of humour. That's one thing they can't ban." },
+      an1: { who: 'anna', sk: 'Synku! To si ty, čo si ma vtedy v marci zdvihol zo zeme. Vidíš? Vtedy nás bolo pár tisíc. Dnes je nás plné námestie.', en: 'Son! You are the one who lifted me off the ground back in March. See? There were a few thousand of us then. Today the whole square is full.', fx: { trust: 1 } },
+      an_after: { who: 'anna', sk: 'Nech ťa Pán Boh ochraňuje, synku.', en: 'God keep you, son.' },
       i_after: { who: 'igor', sk: 'Tribúna je rovno pred tebou!', en: 'The stage is straight ahead!' },
 
       o1: { who: 'otec', sk: 'Jano. Neboj sa, neprišiel som ťa ťahať domov.', en: "Jano. Don't worry, I didn't come to drag you home.", next: 'o2' },
@@ -240,6 +250,7 @@ export const CHAPTERS = [
   {
     id: 'strike',
     action: 'siren',
+    brief: { sk: "O chvíľu je poludnie. Niekto musí spustiť sirénu, aby celý závod vedel, že štrajk sa začal.", en: "It is almost noon. Somebody has to sound the siren so the whole plant knows the strike has begun." },
     scene: 'strike',
     date: { sk: '27. novembra 1989, 11:50', en: '27 November 1989, 11:50 am' },
     place: { sk: 'Chemický závod na okraji Bratislavy', en: 'A chemical plant on the edge of Bratislava' },
@@ -308,6 +319,7 @@ export const CHAPTERS = [
   {
     id: 'border',
     action: 'wire',
+    brief: { sk: "Plot, ktorý štyridsať rokov delil Európu, stojí pár krokov od teba. Dnes ho už nikto nestráži.", en: "The fence that divided Europe for forty years stands a few steps away. Today nobody guards it any more." },
     scene: 'border',
     date: { sk: '10. decembra 1989', en: '10 December 1989' },
     place: { sk: 'Hranica Petržalka – Berg, smer Hainburg', en: 'Petržalka – Berg border, towards Hainburg' },
@@ -394,6 +406,22 @@ export function epilogue(state, lang) {
   } else {
     sk.push('Číslo muža v koženom kabáte Jano dlho nosil v peňaženke. Nikdy nezavolal. Ale ten pocit, že váhal, si pamätá dodnes.');
     en.push('Jano carried the leather-coat man\'s number in his wallet for a long time. He never called. But he still remembers the feeling of having hesitated.');
+  }
+  if (f.helpedAnna) {
+    sk.push('Pani Anna sa dožila slobody. Sviečku z toho marcového večera mala do smrti položenú na kredenci – vedľa fotky chlapca, ktorý ju zdvihol z mokrej dlažby.');
+    en.push('Mrs Anna lived to see freedom. Until she died, the candle from that March evening stood on her sideboard – next to a photo of the boy who lifted her from the wet cobblestones.');
+  }
+  if (f.caught) {
+    sk.push('V zväzku je aj záznam zo 16. novembra: „Rozširoval tlačoviny pred univerzitou.“ Dnes ho má zarámovaný.');
+    en.push('The file also holds an entry from 16 November: “Distributed printed matter outside the university.” Today he keeps it framed.');
+  }
+  if (f.keysRang && f.sirenOnTime) {
+    sk.push('Keď dnes počuje poludňajšiu sirénu alebo štrngot kľúčov, na chvíľu zastane. Vtedy tým zvukom dával takt celému námestiu.');
+    en.push('When he hears a noon siren or the jingle of keys today, he stops for a moment. Back then he set the rhythm for a whole square with those sounds.');
+  }
+  if (f.wire) {
+    sk.push('Kúsok ostnatého drôtu z Bergu má dodnes v zásuvke písacieho stola.');
+    en.push('He still keeps the piece of barbed wire from Berg in his desk drawer.');
   }
   if (courage >= 4) {
     sk.push('V júni 1990 bol volebným komisárom v prvých slobodných voľbách od roku 1946.');

@@ -52,6 +52,14 @@ export const Audio = {
   unlock() { ac(); },
   context() { return ac(); },
   output() { ac(); return master; },
+  // skutočná nahrávka z dist/sfx (leží vedľa index.html); ak sa nedá prehrať, vráti false
+  sample(name, vol = 0.7) {
+    try {
+      const a = document.createElement('audio'); a.src = `sfx/${name}.mp3`; a.volume = vol * (master ? master.gain.value : 0.8);
+      a.play().catch(() => {});
+      return true;
+    } catch { return false; }
+  },
   setVolume(v) { ac(); master.gain.value = v; },
   ambience(kind) {
     this.stopAmbience();
@@ -86,6 +94,9 @@ export const Audio = {
       const g = c.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.1, t0 + 1.5); g.gain.linearRampToValueAtTime(0, t0 + 5);
       src.connect(f); f.connect(g); g.connect(master); src.start();
     }
+    if (name === 'bells') { this.sample('bells', 0.8); return; }
+    if (name === 'applause') { this.sample('applause', 0.8); return; }
+    if (name === 'siren' && this.sample('siren', 0.55)) return;
     if (name === 'siren') {
       for (const [delay, pan] of [[0, -0.6], [0.7, 0.6], [1.6, 0]]) {
         const o = c.createOscillator(); o.type = 'sawtooth';

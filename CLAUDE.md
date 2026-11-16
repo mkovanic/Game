@@ -36,10 +36,13 @@ Na ladenie je v konzole `window.__game` (stav, npcs, startDialogue, advance, cho
 - **Postavy (hotovo):** Microsoft Rocketbox (MIT), `tools/people.sh` (Blender `tools/convert.py` + `tools/pack.mjs`).
   Zdroj sa klonuje sparse do `~/rbwork/rb`. Pozor: materiál z Blendera má `depthWrite: false` (opravuje `prepModel`),
   siete sú po meshopt kvantované (polohy vo svete rátaj cez `applyBoneTransform`), výšku nesie uzol `Bip01`.
-- **Budovy (rozpracované):** pilot SND hotový (`tools/buildings/snd.py`). Čakajú: Univerzita Komenského (kap. 1),
-  Námestie SNP (kap. 2), chemický závod (kap. 3), priechod Petržalka – Berg (kap. 4); voliteľne CC0 dlažba a obloha z Poly Haven.
-- **Akčné scénky (rozpracované):** `src/actions.js` – `raid` (prológ) a `keys` (kap. 2), spúšťa `startAction()` po finálnom dialógu.
-  Nápady na ďalšie: útek pred ŠtB (kap. 1), siréna štrajku (kap. 3), strihanie drôtu (kap. 4). Nepridávaj svetlá počas hry (prekompilovanie shaderov) – použi sprity.
-  Headless test s reálnym GPU: Playwright `channel: 'chrome'` (swiftshader je príliš pomalý).
+- **Budovy:** SND, UK, Stará tržnica hotové (`tools/buildings/*.py` + `lib.py`, vkladá `B.landmark()` / `B.snd()`).
+  Čakajú: chemický závod (kap. 3) a priechod Berg (kap. 4) – zatiaľ procedurálne. Dlažba z Poly Haven, obloha je gradient.
+- **Akčné scénky:** `src/actions.js` – `raid`, `chase`, `keys`, `siren`, `wire`; spúšťa `startAction()` po finálnom dialógu,
+  hovorený úvod je `chapter.brief`. Nepridávaj svetlá počas hry (prekompilovanie shaderov) – použi sprity.
+  Príznaky (`helpedAnna`, `caught`, `leaflets`, `keysRang`, `sirenOnTime`, `wire`) číta `epilogue()` a `cond` pri NPC.
+- **Zvuk:** nahrávky v `dist/sfx/*.mp3` (`Audio.sample`), inak syntéza. Po zmene textov: `node tools-export.mjs > lines.json`
+  a `python3 tools-voice.py lines.json` (SK celé; EN len repliky, ktoré v manifeste chýbajú → `en-extra.mp3`).
+- Headless test s reálnym GPU: Playwright `channel: 'chrome'` (swiftshader je príliš pomalý).
 - Overenie v prehliadači: `window.__game.loadChapter(i)` načíta kapitolu bez menu; veľkosť `dist/index.html` držať do ~25 MB (teraz ~8 MB).
 - Každý nový zdroj (model, fotka, textúra) zapíš do README s autorom, licenciou a odkazom.

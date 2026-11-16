@@ -275,7 +275,7 @@ function keys(ctx) {
       if (!done && (meter >= 100 || t >= DUR)) {
         done = true; endT = t;
         const full = meter >= 100;
-        if (full) { Audio.sfx('keys'); Audio.sfx('crowd'); meter = 100; }
+        if (full) { Audio.sfx('keys'); Audio.sfx('crowd'); Audio.sfx('bells'); meter = 100; }
         ctx.finish({ fx: full || good >= 18 ? { courage: 1 } : {}, flag: full ? 'keysRang' : null, text: full ? S.keysEnd : S.keysEndWeak, delay: full ? 5200 : 2600 });
       }
       if (done) shake = Math.max(shake, 0.6);
@@ -356,7 +356,7 @@ function siren(ctx) {
   const ring = () => {
     done = true; scene.remove(mark); el.prompt.classList.add('hidden');
     const onTime = Math.abs(t - LEAD) <= 2.5;
-    Audio.sfx('siren'); Audio.sfx('crowd'); ctx.world.setCrowd('cheer');
+    Audio.sfx('siren'); Audio.sfx('bells'); Audio.sfx('applause'); ctx.world.setCrowd('cheer');
     ctx.finish({ fx: onTime ? { courage: 1 } : {}, flag: onTime ? 'sirenOnTime' : null, text: onTime ? S.sirenOk : S.sirenLate, delay: 6000 });
   };
   return {
@@ -403,7 +403,7 @@ function wire(ctx) {
       if (near && this.held) { prog += dt / 1.3; if (Math.floor(t * 6) !== Math.floor((t - dt) * 6)) Audio.sfx('blip'); } else prog = Math.max(0, prog - dt);
       if (prog >= 1) {
         prog = 0; strands[n].cut = true; n++; ctx.toast(S.wireCut(n)); jingle(0.8);
-        if (n >= 3) { done = true; scene.remove(mark); el.prompt.classList.add('hidden'); ctx.finish({ fx: { courage: 1 }, flag: 'wire', text: S.wireEnd, delay: 3600 }); }
+        if (n >= 3) { done = true; scene.remove(mark); el.prompt.classList.add('hidden'); Audio.sfx('applause'); ctx.finish({ fx: { courage: 1 }, flag: 'wire', text: S.wireEnd, delay: 5000 }); }
       }
       el.action.innerHTML = `<div class="bar gold"><i style="width:${(((n + prog) / 3) * 100).toFixed(1)}%"></i></div><div class="row"><span>✂ ${n}/3</span></div>`;
     },

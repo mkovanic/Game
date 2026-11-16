@@ -32,14 +32,34 @@ Postavy a dav sú realistické otextúrované rigované modely s motion-capture 
 
 ### Akčné scénky
 
-Po záverečnom rozhovore kapitoly môže nasledovať interaktívna scénka (`src/actions.js`, v `story.js` pole `action`):
+Po záverečnom rozhovore každej kapitoly nasleduje interaktívna scénka (`src/actions.js`, v `story.js` polia `action` a `brief`):
 
-- **Prológ – zásah polície:** 70 sekúnd na námestí; vodné delá mieria za hráčom, autá VB vchádzajú do davu. Hráč chráni plameň sviečky (`F` – znova zapáliť) a môže pomôcť spadnutej pani Anne (`E`). Podľa toho, ako dlho plameň horel, získa odvahu, za pomoc dôveru.
-- **Kapitola 2 – štrnganie kľúčmi:** `Medzerník` / klik v rytme; čím presnejšie, tým viac sa pridáva celé námestie.
+- **Prológ – zásah polície:** 70 sekúnd na námestí; vodné delá mieria za hráčom, autá VB vchádzajú do davu, kordón postupuje. Hráč chráni plameň sviečky (`F` – znova zapáliť) a môže pomôcť spadnutej pani Anne (`E`).
+- **Kapitola 1 – letáky:** rozdať 5 letákov skôr, než hráča dobehne muž v koženom kabáte (`Shift` – beh).
+- **Kapitola 2 – štrnganie kľúčmi:** `Medzerník` / klik v rytme; čím presnejšie, tým viac sa pridáva (a jasá) celé námestie.
+- **Kapitola 3 – siréna:** dôjsť k siréne pri bráne a spustiť ju presne o 12:00.
+- **Kapitola 4 – ostnatý drôt:** pri plote podržať `E` a prestrihnúť tri drôty železnej opony.
 
-### Budovy
+Výsledky scénok menia odvahu a dôveru, zapisujú sa ako príznaky a vracajú sa neskôr: ak hráč pomohol pani Anne, stretne ju v kapitole 2; epilóg má odseky podľa toho, čo hráč spravil.
 
-Historická budova SND v prológu je vymodelovaná skriptom v Blenderi (`tools/buildings/snd.py` → `assets/buildings/snd.glb`, ~9 400 trojuholníkov, 120 kB) podľa fotografie [Bratislava Hviezdoslavovo nam opera SND.jpg](https://commons.wikimedia.org/wiki/File:Bratislava_Hviezdoslavovo_nam_opera_SND.jpg) (autor: Peter Zelizňák, public domain, Wikimedia Commons). Fotka slúžila len ako predloha proporcií a farieb; model neobsahuje žiadne textúry z nej. Ostatné scény sú zatiaľ procedurálne (`src/world.js`).
+### Budovy, prostredie a zvuky
+
+Budovy sú vymodelované skriptami v Blenderi (`tools/buildings/*.py`, spoločné pomôcky v `lib.py`) a vložené ako GLB bez textúr; fotografie slúžili len ako predloha proporcií a farieb:
+
+| Model | Predloha (Wikimedia Commons) | Autor, licencia |
+|---|---|---|
+| `snd.glb` – historická budova SND | [Bratislava Hviezdoslavovo nam opera SND.jpg](https://commons.wikimedia.org/wiki/File:Bratislava_Hviezdoslavovo_nam_opera_SND.jpg) | Peter Zelizňák, public domain |
+| `uk.glb` – Univerzita Komenského | [Šafárikovo námestie and Univerzita Komenského…JPG](https://commons.wikimedia.org/wiki/File:%C5%A0af%C3%A1rikovo_n%C3%A1mestie_(%C5%A0af%C3%A1rikovo_Square)_and_Univerzita_Komensk%C3%A9ho_(Comenius_University)_in_Bratislava,_Slovak_Republic.JPG) | Kiwiev, CC0 |
+| `trznica.glb` – Stará tržnica (Námestie SNP) | [Bratislava stará tržnica 1.jpg](https://commons.wikimedia.org/wiki/File:Bratislava_star%C3%A1_tr%C5%BEnica_1.jpg) | Wizzard, public domain |
+
+Ďalšie prevzaté zdroje:
+
+- Dlažba: [Cobblestone Floor 04](https://polyhaven.com/a/cobblestone_floor_04) – Poly Haven, CC0 (`assets/textures/`, zmenšené na 512 px).
+- `dist/sfx/siren.mp3`: [Civil-defense-siren-waver.ogg](https://commons.wikimedia.org/wiki/File:Civil-defense-siren-waver.ogg) – Techtonic, public domain.
+- `dist/sfx/applause.mp3`: [Slow starting applause.ogg](https://commons.wikimedia.org/wiki/File:Slow_starting_applause.ogg) – stephan, public domain.
+- `dist/sfx/bells.mp3`: [Bells ringing in Tower of Přibyslav.ogg](https://commons.wikimedia.org/wiki/File:Bells_ringing_in_Tower_of_P%C5%99ibyslav.ogg) – Bazi, upravil Blahma, CC BY-SA 3.0 (skrátené, znormalizovaná hlasitosť).
+
+Chemický závod a hraničný priechod sú zatiaľ procedurálne (`src/world.js`). Ostatné zvuky sú syntetizované (`src/audio.js`). Nové anglické repliky (scénky, pani Anna v kap. 2) sú nahovorené hlasmi Microsoft `en-GB-RyanNeural` / `en-GB-SoniaNeural` (`dist/voice/en-extra.mp3`).
 
 ## Vývoj
 
@@ -61,7 +81,7 @@ Pridanie novej kapitoly = nový objekt v `CHAPTERS` v `story.js` (+ prípadne no
 ### Ďalšie možné kroky
 
 - Nahradiť syntetický dabing nahratými hlasmi hercov alebo AI hlasmi (súbory `.mp3` podľa ID uzla dialógu).
-- Ďalšie budovy podľa vzoru SND: Univerzita Komenského, Námestie SNP, chemický závod, hraničný priechod Petržalka – Berg.
+- Modely chemického závodu a hraničného priechodu Petržalka – Berg podľa vzoru SND.
 - Natívna aplikácia pre Mac/Windows (Electron/Tauri obal okolo `dist/index.html`).
 - Ďalšie kapitoly: 1968 (august), SNP 1944, voľby 1990, vznik SR 1993.
 

@@ -23,6 +23,8 @@ V = {'narrator': (M, '-6%', '-4Hz'), 'player': (M, '+0%', '+4Hz'), 'katka': (F, 
      'ondrej': (M, '-5%', '-11Hz'), 'zuzka': (F, '+6%', '+10Hz'), 'guard': (M, '-3%', '-8Hz'),
      'gerti': (F, '-2%', '-4Hz')}
 
+EN = {'m': 'en-GB-RyanNeural', 'f': 'en-GB-SoniaNeural'}  # len pre nové repliky, ktoré Kokoro dabing nemá
+
 def norm(t):
     for a, b in [('„', ''), ('“', ''), ('”', ''), ('"', ''), ('ŠtB', 'eštébé'), ('VPN', 'vépéen'), ('SNP', 'esenpé'),
                  ('ČSSR', 'čéeseser'), ('VB', 'vébé'), ('od 12:00 do 14:00', 'od dvanástej do štrnástej'),
@@ -31,10 +33,11 @@ def norm(t):
         t = t.replace(a, b)
     return t
 
-async def tts(text, who, mp3):
+async def tts(text, who, mp3, lang='sk'):
     v, rate, pitch = V[who]
+    if lang == 'en': v = EN['f' if v == F else 'm']
     for i in range(4):
-        try: return await edge_tts.Communicate(norm(text), v, rate=rate, pitch=pitch).save(mp3)
+        try: return await edge_tts.Communicate(norm(text) if lang == 'sk' else text.replace('ŠtB', 'S T B'), v, rate=rate, pitch=pitch).save(mp3)
         except Exception as e:
             if i == 3: raise
             await asyncio.sleep(2 + i * 3)
@@ -65,6 +68,17 @@ async def main():
         open(f'{tmp}/{ch}.txt', 'w').write('\n'.join(lst))
         ff('-f', 'concat', '-safe', '0', '-i', f'{tmp}/{ch}.txt', *ENC, f'{OUT}/sk-{ch}.mp3')
         print('sk', ch, round(pos), flush=True)
+    extra = [l for l in lines if f"en/{l['key']}" not in man or man[f"en/{l['key']}"][0] == 'en-extra.mp3']
+    if extra:
+        pos = 0.0; lst = []
+        for i, l in enumerate(extra):
+            raw, wav = f'{tmp}/en-{i}.mp3', f'{tmp}/en-{i}.wav'
+            await tts(l['en'], l['who'], raw, 'en'); ff('-i', raw, '-af', AF, '-ar', '44100', '-ac', '1', wav)
+            d = dur(wav); man[f"en/{l['key']}"] = ['en-extra.mp3', round(pos, 3), round(d - 0.45, 3)]
+            pos += d; lst.append(f"file '{wav}'")
+        open(f'{tmp}/en-extra.txt', 'w').write('\n'.join(lst))
+        ff('-f', 'concat', '-safe', '0', '-i', f'{tmp}/en-extra.txt', *ENC, f'{OUT}/en-extra.mp3')
+        print('en extra', len(extra), round(pos), flush=True)
     json.dump(man, open(MAN, 'w'))
     print('DONE')
 

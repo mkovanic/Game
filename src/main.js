@@ -124,13 +124,14 @@ function loadChapter(i) {
   state.maxChapter = Math.max(state.maxChapter, i);
   snapshot = { chapter: i, stats: { ...state.stats }, flags: { ...state.flags } };
   save();
-  const clear = chapterDef.npcs.map((n) => [n.pos[0], n.pos[1], 2.4]);
+  const clear = chapterDef.npcs.filter((n) => !n.cond || n.cond(state)).map((n) => [n.pos[0], n.pos[1], 2.4]);
   clear.push([chapterDef.spawn[0], chapterDef.spawn[1], 3.5]);
   clear.push([-1.3, 1.3, -200, 200]);
   world = buildWorld(scene, chapterDef.scene, { clear });
   renderer.toneMappingExposure = world.exposure;
   bloom.strength = world.night ? 0.6 : 0.22;
   for (const n of chapterDef.npcs) {
+    if (n.cond && !n.cond(state)) continue;
     const obj = makeCharacter({ ...n.look, glow: T.glowSprite(), long: n.voice.g === 'f' });
     obj.position.set(n.pos[0], 0, n.pos[1]);
     obj.rotation.y = Math.atan2(chapterDef.spawn[0] - n.pos[0], chapterDef.spawn[1] - n.pos[1]);
@@ -212,6 +213,7 @@ let action = null;
 function startAction() {
   mode = 'action';
   requestLock();
+  if (chapterDef.brief) Voice.speak(tr(chapterDef.brief), state.lang, CAST.narrator.voice, `${chapterDef.id}.brief`);
   const mine = (action = createAction(chapterDef.action, {
     scene, camera, player, npcs, el, toast, world, state, lang: () => state.lang,
     setObjective: (html) => (el.objective.innerHTML = `<b>${L().objective}:</b> ${html}`),
