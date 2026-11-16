@@ -30,6 +30,7 @@ export const CHAPTERS = [
       en: 'Find Katka by the Hviezdoslav statue. Talk to people on the way.',
     },
     spawn: [0, 36],
+    items: [{ id: 'box', kind: 'box', pos: [13.2, 31.5], after: 'vlado', flag: 'candlesBox', name: { sk: 'Škatuľa sviečok', en: 'Box of candles' }, text: { sk: 'Máš škatuľu sviečok. Zanes ju pánovi Vladimírovi.', en: 'You have the box of candles. Take it to Mr Vladimír.' } }],
     npcs: [
       {
         id: 'anna', name: { sk: 'Pani Anna', en: 'Mrs Anna' }, pos: [3.5, 20],
@@ -42,12 +43,25 @@ export const CHAPTERS = [
         voice: { g: 'm', pitch: 0.75, rate: 1.05 }, start: 'p1', after: 'p_after', required: true,
       },
       {
+        id: 'vlado', name: { sk: 'Pán Vladimír', en: 'Mr Vladimír' }, pos: [-5, 12],
+        look: { model: 'Male_Adult_13', coat: 0x33302c, pants: 0x26262a, hat: 'cap', hatColor: 0x2a2a2a, scarf: 0x5a5a4a, candle: true },
+        voice: { g: 'm', pitch: 0.85, rate: 0.93 }, required: true, after: 'v_after',
+        quest: { need: 'candlesBox', ask: 'v1', wait: 'v_wait', done: 'v3', hint: { sk: 'Dones pánovi Vladimírovi škatuľu sviečok – je pod lampou pri bielom aute na konci námestia.', en: 'Bring Mr Vladimír the box of candles – it is under the lamp by the white car at the end of the square.' } },
+      },
+      {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [2.6, -7],
         look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, candle: true },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],
     nodes: {
+      v1: { who: 'vlado', sk: "Mladý muž, máte voľné ruky? Sviečok je málo a ľudí stále pribúda. Pri aute na konci námestia mám škatuľu. Doniesli by ste ju?", en: "Young man, are your hands free? We are short of candles and people keep coming. I left a box by the car at the end of the square. Would you bring it?", choices: [{ sk: 'Donesiem ju.', en: 'I will bring it.', fx: { trust: 1 }, next: 'v2' }, { sk: 'A nie je to nebezpečné?', en: "Isn't that dangerous?", next: 'v1b' }] },
+      v1b: { who: 'vlado', sk: "Je. Preto to robíme spolu. Jeden človek so sviečkou je výtržník. Päťtisíc ľudí so sviečkami je už otázka, na ktorú musia odpovedať.", en: "It is. That is why we do it together. One man with a candle is a troublemaker. Five thousand people with candles are a question they have to answer.", next: 'v2' },
+      v2: { who: 'vlado', sk: "Je pod lampou, hneď vedľa bieleho auta. A nenápadne. Tí v civile sa pozerajú.", en: "It is under the lamp, right next to the white car. And be discreet. The plain-clothes men are watching." },
+      v_wait: { who: 'vlado', sk: "Škatuľa je pri bielom aute pod lampou. Počkám tu.", en: "The box is by the white car under the lamp. I will wait here." },
+      v3: { who: 'vlado', sk: "Výborne. Vidíte tie tváre? Petíciu za náboženskú slobodu podpísalo vyše pol milióna ľudí. Dnes prvý raz stoja vedľa seba.", en: "Well done. Do you see those faces? More than half a million people signed the petition for religious freedom. Tonight, for the first time, they stand side by side.", fx: { courage: 1 }, next: 'v4' },
+      v4: { who: 'vlado', sk: "Vezmite jednu aj tomu dievčaťu pri soche. A keby sa niečo začalo, neutekajte. Stojte.", en: "Take one for that girl by the statue, too. And if anything starts, do not run. Stand." },
+      v_after: { who: 'vlado', sk: "Neutekajte. Stojte.", en: "Do not run. Stand." },
       a1: { who: 'anna', sk: 'Synku, nemáš sviečku? Na, vezmi si. Nič zlé nerobíme – len tu stojíme a modlíme sa.', en: "Son, haven't you got a candle? Here, take one. We're doing nothing wrong – we're just standing here and praying.",
         choices: [
           { sk: 'Prečo ste sem prišli?', en: 'Why did you come here?', next: 'a2' },
@@ -103,6 +117,7 @@ export const CHAPTERS = [
       en: 'Join the students. Watch out for men in leather coats.',
     },
     spawn: [0, 32],
+    items: [{ id: 'banner', kind: 'roll', pos: [13.0, 30.6], after: 'zuzana', flag: 'banner', name: { sk: 'Zrolovaný transparent', en: 'Rolled-up banner' }, text: { sk: 'Máš transparent. Zanes ho Zuzane.', en: 'You have the banner. Take it to Zuzana.' } }],
     npcs: [
       {
         id: 'peto', name: { sk: 'Peťo', en: 'Peťo' }, pos: [5, 8],
@@ -115,12 +130,25 @@ export const CHAPTERS = [
         voice: { g: 'm', pitch: 0.7, rate: 0.92 }, start: 'e1', after: 'e_after', required: true,
       },
       {
+        id: 'zuzana', name: { sk: 'Zuzana, medička', en: 'Zuzana, medical student' }, pos: [-6, 10],
+        look: { model: 'Female_Adult_09', coat: 0x4a3540, pants: 0x25252b, hat: 'none', scarf: 0xd8c690 },
+        voice: { g: 'f', pitch: 1.1, rate: 1.04 }, required: true, after: 'z_after',
+        quest: { need: 'banner', ask: 'z1', wait: 'z_wait', done: 'z3', hint: { sk: 'Prines Zuzane zrolovaný transparent – je pri múre za červeným autom.', en: 'Bring Zuzana the rolled-up banner – it is by the wall behind the red car.' } },
+      },
+      {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [0, -6],
         look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],
     nodes: {
+      z1: { who: 'zuzana', sk: "Ahoj, ty si od Katky? Super. Niesli sme transparent, ale keď sa objavili eštebáci, chalani ho schovali pri červenom aute. Sama ho neunesiem.", en: "Hi, are you with Katka? Great. We were carrying a banner, but when the secret police showed up, the boys hid it by the red car. I cannot carry it alone.", choices: [{ sk: 'Idem poň.', en: 'I will get it.', fx: { trust: 1 }, next: 'z2' }, { sk: 'Čo je na ňom napísané?', en: 'What does it say?', next: 'z1b' }] },
+      z1b: { who: 'zuzana', sk: "Dve slová: Chceme slobodu. Dnes to stačí na vyhodenie zo školy.", en: "Two words: We want freedom. Today that is enough to get you expelled.", next: 'z2' },
+      z2: { who: 'zuzana', sk: "Je zrolovaný pri múre, hneď za červeným autom. Rýchlo, kým si ho nevšimnú.", en: "It is rolled up by the wall, right behind the red car. Quick, before they notice it." },
+      z_wait: { who: 'zuzana', sk: "Transparent je za červeným autom pri múre.", en: "The banner is behind the red car by the wall." },
+      z3: { who: 'zuzana', sk: "Máš ho! Zajtra je Medzinárodný deň študentstva. V tridsiatom deviatom nacisti zavreli české vysoké školy a študentov odvliekli do lágrov. Preto ideme do ulíc práve teraz.", en: "You got it! Tomorrow is International Students' Day. In 1939 the Nazis closed the Czech universities and dragged students off to the camps. That is why we march right now.", fx: { courage: 1 }, next: 'z4' },
+      z4: { who: 'zuzana', sk: "Chyť druhý koniec. Nech to vidia aj tí v oknách.", en: "Grab the other end. Let the people in the windows see it too." },
+      z_after: { who: 'zuzana', sk: "Drž ho vysoko!", en: "Hold it high!" },
       s1: { who: 'peto', sk: 'Jano, no konečne! Ideme k ministerstvu školstva. Chceme, aby sa s nami konečne niekto rozprával. A aby nikto neletel zo školy za to, čo si myslí.', en: "Jano, at last! We're marching to the Ministry of Education. We want someone to finally talk to us. And nobody kicked out of school for what they think.",
         choices: [
           { sk: 'Nezavrú nás?', en: "Won't they lock us up?", next: 's2' },
@@ -180,6 +208,7 @@ export const CHAPTERS = [
       en: 'Make your way through the crowd to the stage where Katka is waiting.',
     },
     spawn: [0, 34],
+    items: [{ id: 'cable', kind: 'drum', pos: [-22.4, 31], after: 'milan', flag: 'cable', name: { sk: 'Bubon s káblom', en: 'Cable drum' }, text: { sk: 'Máš kábel. Zanes ho Milanovi k tribúne.', en: 'You have the cable. Take it to Milan by the stage.' } }],
     npcs: [
       { // príde len vtedy, ak jej hráč v prológu pomohol vstať
         id: 'anna', name: { sk: 'Pani Anna', en: 'Mrs Anna' }, pos: [-3, 27], cond: (st) => !!st.flags.helpedAnna,
@@ -197,12 +226,24 @@ export const CHAPTERS = [
         voice: { g: 'm', pitch: 0.8, rate: 0.95 }, start: 'o1', after: 'o_after', required: true,
       },
       {
+        id: 'milan', name: { sk: 'Zvukár Milan', en: 'Milan, sound man' }, pos: [14, -27],
+        look: { model: 'Male_Adult_04', coat: 0x2f3b33, pants: 0x222226, hat: 'beret', hatColor: 0x2a2a2a },
+        voice: { g: 'm', pitch: 1.0, rate: 1.06 }, required: true, after: 'm_after',
+        quest: { need: 'cable', ask: 'm1', wait: 'm_wait', done: 'm3', hint: { sk: 'Nájdi bubon s káblom – ostal pri lampe vzadu na kraji námestia – a zanes ho zvukárovi Milanovi pri tribúne.', en: 'Find the cable drum – it was left by the lamp at the back edge of the square – and take it to Milan by the stage.' } },
+      },
+      {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [3, -24],
         look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],
     nodes: {
+      m1: { who: 'milan', sk: "Hej, ty! Nevidel si niekde kábel? Mikrofón na tribúne onemel a o chvíľu má hovoriť Kňažko. Bez zvuku nás počuje prvých päť radov.", en: "Hey, you! Have you seen a cable anywhere? The microphone on the stage went dead and Kňažko is due to speak in a minute. Without sound only the first five rows can hear us.", choices: [{ sk: 'Pohľadám ho.', en: 'I will look for it.', fx: { trust: 1 }, next: 'm2' }, { sk: 'Kde si ho videl naposledy?', en: 'Where did you last see it?', next: 'm2' }] },
+      m2: { who: 'milan', sk: "Bubon s káblom ostal pri lampe na kraji námestia, tam vzadu, odkiaľ si prišiel. Stotisíc ľudí čaká na jeden kábel.", en: "The cable drum was left by the lamp at the edge of the square, back there where you came from. A hundred thousand people are waiting for one cable." },
+      m_wait: { who: 'milan', sk: "Bubon s káblom. Pri lampe vzadu na kraji námestia.", en: "The cable drum. By the lamp at the back edge of the square." },
+      m3: { who: 'milan', sk: "To je on! Sekundu… Skúška, skúška. Ide to. Vieš, čo je na tom najkrajšie? Prvý raz po štyridsiatich rokoch sa tu do mikrofónu hovorí bez povolenia.", en: "That is it! One second… Testing, testing. It works. Do you know the best part? For the first time in forty years, somebody speaks into a microphone here without a permit.", fx: { courage: 1 }, next: 'm4' },
+      m4: { who: 'milan', sk: "Choď za tribúnu, tvoje dievča ťa tam hľadá.", en: "Go behind the stage, your girl is looking for you there." },
+      m_after: { who: 'milan', sk: "Ide to. Počuť nás až na druhý koniec námestia.", en: "It works. They can hear us all the way across the square." },
       i1: { who: 'igor', sk: 'Dnes sa nehrá, mladý muž. Divadlá štrajkujú. Namiesto predstavení sa večer čo večer rozprávame s ľuďmi. Najväčšie predstavenie môjho života – a nikto v ňom nehrá.', en: "No show tonight, young man. The theatres are on strike. Instead of performing, we talk with people, night after night. The greatest show of my life – and nobody is acting.",
         choices: [
           { sk: 'Čo je Verejnosť proti násiliu?', en: 'What is Public Against Violence?', next: 'i2' },
@@ -264,6 +305,7 @@ export const CHAPTERS = [
       en: 'Win over the workers. At noon, find your father by the hall.',
     },
     spawn: [0, 24],
+    items: [{ id: 'ribbons', kind: 'box', pos: [-19.6, 13.6], after: 'jozef', flag: 'ribbons', name: { sk: 'Krabica s trikolórami', en: 'Box of tricolour ribbons' }, text: { sk: 'Máš trikolóry. Zanes ich vrátnikovi Jozefovi.', en: 'You have the ribbons. Take them to Jozef.' } }],
     npcs: [
       {
         id: 'ondrej', name: { sk: 'Majster Ondrej', en: 'Foreman Ondrej' }, pos: [-9, 4],
@@ -276,12 +318,23 @@ export const CHAPTERS = [
         voice: { g: 'f', pitch: 1.05, rate: 1.05 }, start: 'z1', after: 'z_after', required: true,
       },
       {
+        id: 'jozef', name: { sk: 'Vrátnik Jozef', en: 'Jozef, gatekeeper' }, pos: [13, 10],
+        look: { model: 'Construction_Male_03', coat: 0x3a4a5a, pants: 0x2b3038 },
+        voice: { g: 'm', pitch: 0.82, rate: 0.92 }, required: true, after: 'j_after',
+        quest: { need: 'ribbons', ask: 'j1', wait: 'j_wait', done: 'j3', hint: { sk: 'Dones vrátnikovi Jozefovi krabicu s trikolórami – je pri modrom nákladnom aute.', en: 'Bring gatekeeper Jozef the box of tricolour ribbons – it is by the blue lorry.' } },
+      },
+      {
         id: 'otec', name: { sk: 'Otec', en: 'Dad' }, pos: [0, -15],
         look: { model: 'Male_Adult_03', coat: 0x2b3f63, pants: 0x2b3f63, hair: 0x6a6a6a, hat: 'cap', hatColor: 0x353535 },
         voice: { g: 'm', pitch: 0.8, rate: 0.95 }, start: 'o1', wait: 'o_wait', after: 'o_after', final: true,
       },
     ],
     nodes: {
+      j1: { who: 'jozef', sk: "Stoj, mladý. Vieš, koľko rokov tu otváram bránu? Tridsaťjeden. A ani raz som nevidel, aby robotníci vyšli na dvor sami od seba.", en: "Hold on, young man. Do you know how many years I have been opening this gate? Thirty-one. And not once have I seen the workers walk out into the yard of their own accord.", next: 'j2' },
+      j2: { who: 'jozef', sk: "Ženy z expedície nastrihali trikolóry. Krabica ostala pri modrom nákladnom aute. Dones ju, nech má každý na kabáte, za čo tu stojí.", en: "The women from dispatch cut tricolour ribbons. The box was left by the blue lorry. Bring it, so everyone can wear on their coat what they stand here for." },
+      j_wait: { who: 'jozef', sk: "Krabica s trikolórami je pri modrom nákladiaku.", en: "The box of ribbons is by the blue lorry." },
+      j3: { who: 'jozef', sk: "Tak. Pripni si aj ty. Hovorili nám, že študenti sú chuligáni a robotník s nimi nejde. Dnes na poludnie uvidia, s kým robotník ide.", en: "There. Pin one on yourself, too. They told us the students were hooligans and that the workers were not with them. At noon today they will see who the workers are with.", fx: { courage: 1 } },
+      j_after: { who: 'jozef', sk: "O dvanástej zatvorím bránu. Zvnútra.", en: "At twelve I will close the gate. From the inside." },
       n1: { who: 'ondrej', sk: 'Ďalší študentík z mesta. Vy ste si to začali a my máme prísť o prácu? Mám tri deti.', en: "Another student from town. You started this, and now we're supposed to lose our jobs? I've got three kids.",
         choices: [
           { sk: 'Nikto nechce, aby ste prišli o prácu. Chceme, aby ste sa mohli slobodne rozhodovať.', en: "Nobody wants you to lose your job. We want you to be free to decide for yourselves.", next: 'n2', fx: { trust: 1 } },
@@ -333,6 +386,7 @@ export const CHAPTERS = [
       en: 'Cross the border. Katka is waiting on the Austrian side.',
     },
     spawn: [0, 44],
+    items: [{ id: 'photo', kind: 'paper', pos: [6.2, 25], after: 'rudolf', flag: 'photo', name: { sk: 'Stará fotografia', en: 'Old photograph' }, text: { sk: 'Našiel si fotografiu. Vráť ju pánovi Rudolfovi.', en: 'You found the photograph. Return it to Mr Rudolf.' } }],
     npcs: [
       {
         id: 'guard', name: { sk: 'Pohraničník', en: 'Border guard' }, pos: [7.5, 3.5],
@@ -345,12 +399,24 @@ export const CHAPTERS = [
         voice: { g: 'f', pitch: 1.0, rate: 1.0 }, start: 'r1', after: 'r_after', required: true,
       },
       {
+        id: 'rudolf', name: { sk: 'Pán Rudolf', en: 'Mr Rudolf' }, pos: [-6.5, 22],
+        look: { model: 'Business_Male_02', coat: 0x3a3632, pants: 0x2a2a2a, hat: 'fedora', hatColor: 0x2e2a26, scarf: 0x6a2a2a },
+        voice: { g: 'm', pitch: 0.8, rate: 0.9 }, required: true, after: 'ru_after',
+        quest: { need: 'photo', ask: 'ru1', wait: 'ru_wait', done: 'ru3', hint: { sk: 'Nájdi v snehu pri ceste fotografiu, ktorú stratil pán Rudolf.', en: 'Find the photograph Mr Rudolf lost in the snow by the road.' } },
+      },
+      {
         id: 'katka', name: { sk: 'Katka', en: 'Katka' }, pos: [5.5, -28],
         look: { model: 'Female_Adult_04', coat: 0x8a4b2a, pants: 0x2b2b3a, hair: 0x5a3018, hat: 'beret', hatColor: 0x1d2a4a, scarf: 0xe8e8e8 },
         voice: { g: 'f', pitch: 1.15, rate: 1.0 }, start: 'k1', wait: 'k_wait', after: 'k_after', final: true,
       },
     ],
     nodes: {
+      ru1: { who: 'rudolf', sk: "Prepáčte, mladý muž… vypadla mi fotografia. Niekde tu v snehu pri ceste. Bez okuliarov ju nenájdem.", en: "Excuse me, young man… I dropped a photograph. Somewhere here in the snow by the road. I cannot find it without my glasses.", next: 'ru2' },
+      ru2: { who: 'rudolf', sk: "Je na nej moja sestra. V štyridsiatom ôsmom ostala na druhej strane. Štyridsaťjeden rokov som ju videl len na tom papieri.", en: "It shows my sister. In 1948 she stayed on the other side. For forty-one years I have seen her only on that piece of paper." },
+      ru_wait: { who: 'rudolf', sk: "Fotografia… musela mi vypadnúť pri ceste, na druhej strane.", en: "The photograph… I must have dropped it by the road, on the other side." },
+      ru3: { who: 'rudolf', sk: "To je ona. Marta. Býva v Hainburgu, odtiaľto je to šesť kilometrov. Šesť kilometrov a štyridsaťjeden rokov.", en: "That is her. Marta. She lives in Hainburg, six kilometres from here. Six kilometres and forty-one years.", fx: { trust: 1 }, next: 'ru4' },
+      ru4: { who: 'rudolf', sk: "Dnes tam prejdem peši. Poďte, nech na to nie som sám.", en: "Today I will walk there. Come, so that I am not alone in it." },
+      ru_after: { who: 'rudolf', sk: "Šesť kilometrov. Dnes ich prejdem.", en: "Six kilometres. Today I will walk them." },
       g1: { who: 'guard', sk: 'Dvadsať rokov som strážil tento drôt. Mali sme rozkaz zastaviť každého, kto by chcel prejsť. Za každú cenu.', en: 'For twenty years I guarded this wire. Our orders were to stop anyone who tried to cross. At any cost.',
         choices: [
           { sk: 'Ľutujete niečo?', en: 'Do you regret anything?', next: 'g2' },

@@ -17,7 +17,7 @@ const UI = {
   sk: {
     subtitle: 'Príbeh z Nežnej revolúcie · Slovensko 1988 – 1989',
     newGame: 'Nová hra', cont: 'Pokračovať', chapters: 'Kapitoly', lang: 'Jazyk', voice: 'Dabing',
-    on: 'zapnutý', off: 'vypnutý', start: 'Začať', next: 'Ďalej', talk: 'Hovoriť',
+    on: 'zapnutý', off: 'vypnutý', start: 'Začať', next: 'Ďalej', talk: 'Hovoriť', take: 'Vziať', back: 'Vráť sa za:',
     history: 'Čo sa naozaj stalo', paused: 'Pauza', resume: 'Pokračovať', menu: 'Hlavné menu',
     controls: '<b>WASD</b> chôdza · <b>myš</b> rozhliadanie · <b>Shift</b> beh · <b>C</b> kľaknúť si · <b>E</b> hovoriť / konať · <b>medzerník / klik</b> ďalej · <b>1–3</b> voľba · <b>L</b> jazyk · <b>Esc</b> pauza',
     disclaimer: 'Postavy sú fiktívne. Udalosti, miesta a dátumy sú skutočné – zhrnutia nájdeš na konci každej kapitoly.',
@@ -32,7 +32,7 @@ const UI = {
   en: {
     subtitle: 'A story of the Velvet Revolution · Slovakia 1988 – 1989',
     newGame: 'New game', cont: 'Continue', chapters: 'Chapters', lang: 'Language', voice: 'Voice-over',
-    on: 'on', off: 'off', start: 'Begin', next: 'Next', talk: 'Talk to',
+    on: 'on', off: 'off', start: 'Begin', next: 'Next', talk: 'Talk to', take: 'Take', back: 'Return to',
     history: 'What really happened', paused: 'Paused', resume: 'Resume', menu: 'Main menu',
     controls: '<b>WASD</b> walk · <b>mouse</b> look · <b>Shift</b> run · <b>C</b> kneel · <b>E</b> talk / act · <b>space / click</b> next · <b>1–3</b> choose · <b>L</b> language · <b>Esc</b> pause',
     disclaimer: 'The characters are fictional. The events, places and dates are real – a summary follows each chapter.',
@@ -99,6 +99,9 @@ let mode = 'menu';
 let world = null;
 let npcs = [];
 let talked = {};
+let asked = {};   // postavy, ktoré už hráčovi zadali úlohu (quest)
+let items = [];   // predmety na zobratie v aktuálnej kapitole
+let nearItem = null;
 const player = { x: 0, z: 0, yaw: 0, pitch: 0, bob: 0, kneel: false, eye: 1.65 };
 let chapterDef = null;
 
@@ -107,6 +110,8 @@ function clearChapter() {
   if (menuWorld) { menuWorld.dispose(); menuWorld = null; }
   if (world) world.dispose();
   npcs.forEach((n) => scene.remove(n.obj));
+  items.forEach((it) => scene.remove(it.obj));
+  items = [];
   npcs = [];
   world = null;
 }
@@ -121,6 +126,8 @@ function loadChapter(i) {
   state.chapter = i;
   chapterDef = CHAPTERS[i];
   talked = {};
+  asked = {};
+  for (const it of chapterDef.items || []) { delete state.flags[it.flag]; items.push({ def: it, obj: makeItem(it), taken: false }); }
   state.maxChapter = Math.max(state.maxChapter, i);
   snapshot = { chapter: i, stats: { ...state.stats }, flags: { ...state.flags } };
   save();
@@ -164,7 +171,10 @@ function chapterName(i) { return i === 0 ? L().prologue : `${L().chapter} ${i}`;
 function refreshHud() {
   if (!chapterDef) return;
   el.chapterTag.innerHTML = `<span>${chapterName(state.chapter)} · ${tr(chapterDef.title)}</span><small>${tr(chapterDef.date)} — ${tr(chapterDef.place)}</small>`;
-  el.objective.innerHTML = `<b>${L().objective}:</b> ${tr(chapterDef.objective)}`;
+  // rozpracovaná úloha od postavy má prednosť pred hlavnou úlohou kapitoly
+  const q = chapterDef.npcs.find((n) => n.quest && asked[n.id] && !talked[n.id]);
+  const hint = q ? (state.flags[q.quest.need] ? `${L().back} <b>${tr(q.name)}</b>` : tr(q.quest.hint)) : tr(chapterDef.objective);
+  el.objective.innerHTML = `<b>${L().objective}:</b> ${hint}`;
   const dots = (v) => '●'.repeat(Math.max(0, Math.min(6, v))) + '○'.repeat(Math.max(0, 6 - Math.max(0, v)));
   el.stats.innerHTML = `${L().courage} <i>${dots(state.stats.courage)}</i> &nbsp; ${L().trust} <i>${dots(state.stats.trust)}</i>`;
 }
@@ -360,6 +370,24 @@ function resume() {
 // ───────────────────────────── dialógy ─────────────────────────────
 const dlg = { npc: null, node: null, nodeId: null, typing: 0, full: '', onEnd: null, startedFrom: null, voiceToken: 0 };
 
+// predmet na zobratie: jednoduchá rekvizita + svietiaca značka
+function makeItem(it) {
+  const g = new THREE.Group(); g.position.set(it.pos[0], 0, it.pos[1]); g.visible = false;
+  const m = (geo, color, x, y, z, o = {}) => { const k = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...o })); k.position.set(x, y, z); k.castShadow = true; g.add(k); return k; };
+  if (it.kind === 'box') { m(new THREE.BoxGeometry(0.46, 0.3, 0.34), 0x8a6a42, 0, 0.15, 0); m(new THREE.BoxGeometry(0.48, 0.03, 0.36), 0x9a7a50, 0, 0.31, 0); m(new THREE.BoxGeometry(0.2, 0.12, 0.005), 0xf0ead8, 0, 0.17, 0.173); }
+  else if (it.kind === 'roll') { m(new THREE.CylinderGeometry(0.07, 0.07, 1.5, 12), 0xf0ece0, 0, 0.09, 0).rotation.z = Math.PI / 2; for (const s of [-1, 1]) m(new THREE.CylinderGeometry(0.018, 0.018, 1.7, 6), 0x7a5a3a, s * 0.05, 0.19, 0.02).rotation.z = Math.PI / 2; }
+  else if (it.kind === 'drum') { m(new THREE.CylinderGeometry(0.2, 0.2, 0.26, 16), 0x1a1a1a, 0, 0.26, 0).rotation.z = Math.PI / 2; for (const s of [-1, 1]) m(new THREE.CylinderGeometry(0.27, 0.27, 0.025, 18), 0xb8862a, s * 0.14, 0.27, 0).rotation.z = Math.PI / 2; }
+  else { m(new THREE.BoxGeometry(0.13, 0.004, 0.09), 0xd8c8a0, 0, 0.02, 0).rotation.y = 0.5; m(new THREE.BoxGeometry(0.1, 0.005, 0.065), 0x5a4a3a, 0, 0.022, 0).rotation.y = 0.5; }
+  const mk = new THREE.Mesh(new THREE.OctahedronGeometry(0.14), new THREE.MeshBasicMaterial({ color: 0xffc94a, depthTest: false, transparent: true, opacity: 0.95 }));
+  mk.position.y = 1.1; mk.renderOrder = 11; g.add(mk); g.userData.marker = mk;
+  scene.add(g);
+  return g;
+}
+function takeItem(it) {
+  it.taken = true; it.obj.visible = false; state.flags[it.def.flag] = true;
+  Audio.sfx('blip'); toast(tr(it.def.name)); refreshHud();
+}
+
 function allRequiredDone() {
   return chapterDef.npcs.filter((n) => n.required).every((n) => talked[n.id]);
 }
@@ -373,6 +401,7 @@ function startDialogue(n) {
   let start;
   if (d.final && !allRequiredDone()) start = d.wait;
   else if (talked[d.id]) start = d.after;
+  else if (d.quest) start = state.flags[d.quest.need] ? d.quest.done : asked[d.id] ? d.quest.wait : d.quest.ask;
   else start = d.start;
   dlg.startedFrom = start;
   show(el.dlg); show(el.prompt, false); document.body.classList.add('talking');
@@ -483,8 +512,10 @@ function endDialogue() {
   Voice.stop();
   show(el.dlg, false); document.body.classList.remove('talking');
   const d = dlg.npc.def;
-  const wasMain = dlg.startedFrom === d.start;
+  const wasMain = dlg.startedFrom === (d.quest ? d.quest.done : d.start);
   if (wasMain) talked[d.id] = true;
+  if (d.quest && dlg.startedFrom === d.quest.ask) asked[d.id] = true;
+  refreshHud();
   dlg.npc = null; dlg.node = null;
   if (wasMain && d.final) { if (chapterDef.action) startAction(); else chapterComplete(); return; }
   mode = 'play';
@@ -511,7 +542,7 @@ canvas.addEventListener('click', () => {
   else if (mode === 'dialogue') advance();
 });
 el.dlg.addEventListener('click', () => advance());
-el.prompt.addEventListener('click', () => { if (mode === 'play' && nearNpc) startDialogue(nearNpc); });
+el.prompt.addEventListener('click', () => { if (mode !== 'play') return; if (nearItem) takeItem(nearItem); else if (nearNpc) startDialogue(nearNpc); });
 
 window.addEventListener('mousemove', (e) => {
   if (mode !== 'play' && mode !== 'action') return;
@@ -535,7 +566,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyL' && mode !== 'menu') { setLang(state.lang === 'sk' ? 'en' : 'sk'); return; }
   if ((mode === 'play' || mode === 'action') && e.code === 'KeyC' && !e.repeat) player.kneel = !player.kneel;
   if (mode === 'play') {
-    if (e.code === 'KeyE' && nearNpc) startDialogue(nearNpc);
+    if (e.code === 'KeyE' && nearItem) takeItem(nearItem);
+    else if (e.code === 'KeyE' && nearNpc) startDialogue(nearNpc);
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
   } else if (mode === 'action') {
     if (e.code === 'Space') e.preventDefault();
@@ -656,7 +688,16 @@ function tick() {
       const d = Math.hypot(n.obj.position.x - player.x, n.obj.position.z - player.z);
       if (d < best) { best = d; nearNpc = n; }
     }
+    // predmety úloh: zobrazia sa, keď o ne postava požiada
+    nearItem = null;
+    if (mode === 'play') for (const it of items) {
+      it.obj.visible = !it.taken && (!it.def.after || !!asked[it.def.after]);
+      if (!it.obj.visible) continue;
+      it.obj.userData.marker.position.y = 1.1 + Math.sin(time * 3) * 0.08; it.obj.userData.marker.rotation.y = time * 2;
+      if (Math.hypot(it.def.pos[0] - player.x, it.def.pos[1] - player.z) < 2.2) nearItem = it;
+    }
     if (mode === 'action') { /* výzvy riadi scénka */ }
+    else if (nearItem) { el.prompt.innerHTML = `<kbd>E</kbd> ${L().take}: <b>${tr(nearItem.def.name)}</b>`; show(el.prompt); }
     else if (nearNpc) {
       el.prompt.innerHTML = `<kbd>E</kbd> ${L().talk}: <b>${tr(nearNpc.def.name)}</b>`;
       show(el.prompt);

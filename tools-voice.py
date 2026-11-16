@@ -21,7 +21,8 @@ V = {'narrator': (M, '-6%', '-4Hz'), 'player': (M, '+0%', '+4Hz'), 'katka': (F, 
      'anna': (F, '-9%', '-12Hz'), 'vb': (M, '+4%', '-6Hz'), 'peto': (M, '+8%', '+8Hz'),
      'kollar': (M, '-8%', '-10Hz'), 'igor': (M, '-2%', '+0Hz'), 'otec': (M, '-4%', '-7Hz'),
      'ondrej': (M, '-5%', '-11Hz'), 'zuzka': (F, '+6%', '+10Hz'), 'guard': (M, '-3%', '-8Hz'),
-     'gerti': (F, '-2%', '-4Hz')}
+     'gerti': (F, '-2%', '-4Hz'), 'vlado': (M, '-7%', '-9Hz'), 'zuzana': (F, '+5%', '+6Hz'), 'milan': (M, '+7%', '+5Hz'),
+     'jozef': (M, '-8%', '-12Hz'), 'rudolf': (M, '-11%', '-5Hz')}
 
 EN = {'m': 'en-GB-RyanNeural', 'f': 'en-GB-SoniaNeural'}  # len pre nové repliky, ktoré Kokoro dabing nemá
 

@@ -40,6 +40,12 @@ Po záverečnom rozhovore každej kapitoly nasleduje interaktívna scénka (`src
 - **Kapitola 3 – siréna:** dôjsť k siréne pri bráne a spustiť ju presne o 12:00.
 - **Kapitola 4 – ostnatý drôt:** pri plote podržať `E` a prestrihnúť tri drôty železnej opony.
 
+V scénkach sa hráč rozhliada myšou ako inde, `C` si kľakne (v prológu tak kryje plameň telom), ruky hráča sú viditeľné (sviečka a zápalka, zväzok letákov) a dav uhýba autám aj kordónu.
+
+### Úlohy v kapitolách
+
+Každá kapitola má okrem rozhovorov aj úlohu od novej postavy (`quest` pri NPC a `items` v `story.js`): priniesť škatuľu sviečok, schovaný transparent, kábel k mikrofónu na tribúne, krabicu trikolór, stratenú fotografiu. Predmet sa objaví, až keď oň postava požiada, a berie sa klávesom `E`.
+
 Výsledky scénok menia odvahu a dôveru, zapisujú sa ako príznaky a vracajú sa neskôr: ak hráč pomohol pani Anne, stretne ju v kapitole 2; epilóg má odseky podľa toho, čo hráč spravil.
 
 ### Budovy, prostredie a zvuky

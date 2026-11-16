@@ -41,6 +41,9 @@ Na ladenie je v konzole `window.__game` (stav, npcs, startDialogue, advance, cho
 - **Akčné scénky:** `src/actions.js` – `raid`, `chase`, `keys`, `siren`, `wire`; spúšťa `startAction()` po finálnom dialógu,
   hovorený úvod je `chapter.brief`. Nepridávaj svetlá počas hry (prekompilovanie shaderov) – použi sprity.
   Príznaky (`helpedAnna`, `caught`, `leaflets`, `keysRang`, `sirenOnTime`, `wire`) číta `epilogue()` a `cond` pri NPC.
+- **Úlohy:** NPC s `quest: { need, ask, wait, done, hint }` + `chapter.items` (zobrazia sa po `ask`, `E` = vziať, nastaví príznak).
+  Pozor na jedinečné ID uzlov v rámci kapitoly (esbuild hlási duplicitné kľúče). Vozidlá: `src/vehicles.js` (`makeVehicle`).
+  Dav: `world.setCrowd('cheer')`, `world.setRepel([{x,z,r}])`; kľak hráča `player.kneel` (kláves C).
 - **Zvuk:** nahrávky v `dist/sfx/*.mp3` (`Audio.sample`), inak syntéza. Po zmene textov: `node tools-export.mjs > lines.json`
   a `python3 tools-voice.py lines.json` (SK celé; EN len repliky, ktoré v manifeste chýbajú → `en-extra.mp3`).
 - Headless test s reálnym GPU: Playwright `channel: 'chrome'` (swiftshader je príliš pomalý).
