@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as T from './textures.js';
 import { makeCharacter, crowdPoses } from './people.js';
 import { makeBuilding } from './buildings.js';
+import { makeVehicle } from './vehicles.js';
 import cobbleDiff from '../assets/textures/cobble_diff.jpg';
 import cobbleNor from '../assets/textures/cobble_nor_gl.jpg';
 
@@ -162,29 +163,9 @@ class Builder {
   }
 
   car(x, z, rot = 0, color = 0x9aa4a0, kind = 'car') {
-    const g = new THREE.Group();
+    const g = makeVehicle(kind, { color, night: this.env.night });
     g.position.set(x, 0, z); g.rotation.y = rot;
-    const body = std(color, { roughness: 0.45, metalness: 0.3 });
-    const glass = std(0x1a2026, { roughness: 0.15, metalness: 0.6 });
-    const wheel = std(0x151515);
-    let L = 4, W = 1.6;
-    if (kind === 'truck') {
-      L = 7.5; W = 2.5;
-      g.add(mesh(new THREE.BoxGeometry(W, 2.4, 5.2), body, 0, 2.0, -1.0));
-      g.add(mesh(new THREE.BoxGeometry(W, 2.1, 2.0), body, 0, 1.85, 2.6));
-      g.add(mesh(new THREE.BoxGeometry(W - 0.1, 0.8, 0.1), glass, 0, 2.3, 3.62));
-      // vodné delo
-      g.add(mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.4, 10), std(0x333333), 0, 3.4, 1.8));
-      g.add(mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.6, 8), std(0x222222), 0, 3.55, 2.5).rotateX(Math.PI / 2 - 0.15));
-      for (const zz of [-2.6, -0.6, 2.6]) for (const s of [-1, 1]) g.add(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.35, 14), wheel, s * 1.2, 0.5, zz).rotateZ(Math.PI / 2));
-    } else {
-      g.add(mesh(new THREE.BoxGeometry(W, 0.65, L), body, 0, 0.62, 0));
-      g.add(mesh(new THREE.BoxGeometry(W - 0.12, 0.55, L * 0.5), body, 0, 1.2, -0.15));
-      g.add(mesh(new THREE.BoxGeometry(W - 0.08, 0.42, L * 0.48), glass, 0, 1.2, -0.15));
-      for (const zz of [-1.25, 1.25]) for (const s of [-1, 1]) g.add(mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.22, 12), wheel, s * 0.75, 0.3, zz).rotateZ(Math.PI / 2));
-      const hl = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: this.env.night ? 0xffffcc : 0, emissiveIntensity: 1 });
-      for (const s of [-1, 1]) g.add(mesh(new THREE.CircleGeometry(0.12, 10), hl, s * 0.55, 0.7, L / 2 + 0.01, false));
-    }
+    const { L, W } = g.userData;
     this.add(g);
     // kolízia (osovo zarovnaná aproximácia)
     const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
@@ -510,16 +491,20 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
       B.add(L);
     }
   }
+  people.forEach((p) => { p.bx = p.x; p.ox = 0; });
   const circles = people.map((p) => ({ x: p.x, z: p.z, r: 0.26 }));
   people.forEach((p, i) => (p.ci = i));
   B.circles.push(...circles);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), v = new THREE.Vector3(), hv = new THREE.Vector3();
-  let frame = -1, lx = 1e9, lz = 1e9;
+  let frame = -1, lx = 1e9, lz = 1e9, settle = 0;
   const NEAR2 = 8 * 8;
   const update = (t, dt, pp = { x: 0, z: 0 }) => {
     const f = Math.floor(t * 11);
     const moved = (pp.x - lx) ** 2 + (pp.z - lz) ** 2 > 2.25;
-    const still = !move && frame >= 0 && !moved;
+    // dav uhýba autám a kordónu (B.repel = [{ x, z, r }])
+    const rep = !move && B.repel && B.repel.length ? B.repel : null;
+    if (rep) settle = 1.2; else settle = Math.max(0, settle - dt);
+    const still = !move && frame >= 0 && !moved && settle <= 0;
     if (!still) { lx = pp.x; lz = pp.z; }
     for (const G of groups) {
       let geo = move ? G.geos[(G.g + f) % NG] : G.geos[G.g];
@@ -534,6 +519,15 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
           p.x += move.dir[0] * p.sp * dt; p.z += move.dir[1] * p.sp * dt;
           if (p.z < area.minZ) p.z = area.maxZ; if (p.z > area.maxZ) p.z = area.minZ;
           circles[p.ci].x = p.x; circles[p.ci].z = p.z;
+        }
+        if (settle > 0) {
+          let tx = 0;
+          if (rep) for (const r of rep) {
+            const dx = p.bx - r.x, dz = p.z - r.z;
+            if (Math.abs(dz) < r.r + 1.2 && Math.abs(dx) < r.r) tx = (dx >= 0 ? 1 : -1) * (r.r - Math.abs(dx)) * Math.min(1, (r.r + 1.2 - Math.abs(dz)) / 1.2);
+          }
+          p.ox += (tx - p.ox) * Math.min(1, dt * 7);
+          p.x = p.bx + p.ox; circles[p.ci].x = p.x;
         }
         e.set(0, p.yaw, 0); q.setFromEuler(e);
         s.set(p.w * p.h, p.h, p.w * p.h); v.set(p.x, 0, p.z);
@@ -553,8 +547,8 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     frame = f;
     if (candlePts) {
       const cp = candlePts.geometry.attributes.position;
-      if (move || t === 0) {
-        cand.forEach((p, i) => cp.setXYZ(i, p.x + Math.sin(p.yaw) * 0.28 + Math.cos(p.yaw) * 0.12, 1.02 * p.h, p.z + Math.cos(p.yaw) * 0.28 - Math.sin(p.yaw) * 0.12));
+      if (move || t === 0 || settle > 0) {
+        cand.forEach((p, i) => cp.setXYZ(i, p.x + Math.sin(p.yaw) * 0.28 + Math.cos(p.yaw) * 0.12, (!move && p.g === 2 ? 0.62 : 1.02) * p.h, p.z + Math.cos(p.yaw) * 0.28 - Math.sin(p.yaw) * 0.12));
         cp.needsUpdate = true;
       }
       candlePts.material.size = 0.29 + Math.sin(t * 17) * 0.02;
@@ -678,8 +672,8 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     B.statue(0, -12, { scale: 1.5 });
     for (let z = -40; z <= 40; z += 10) { B.tree(-14.5, z + 3, z + 100, 1.1); B.tree(14.5, z - 2, z + 200, 1.1); }
     for (let z = -36; z <= 40; z += 13) { B.lamp(-16.5, z, { light: z % 26 === 0 }); B.lamp(16.5, z + 6, { light: (z + 13) % 26 === 0 }); }
-    B.car(-14.5, 32, 0, 0x55603f, 'truck');
-    B.car(-14.5, 41, 0, 0x55603f, 'truck');
+    B.car(-14.5, 32, 0, 0x55603f, 'cannon');
+    B.car(-14.5, 41, 0, 0x55603f, 'cannon');
     B.car(14.8, 36, Math.PI, 0xd4cfa2);
     // policajný kordón
     for (let i = 0; i < 7; i++) {
@@ -691,7 +685,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
       const circle = { x: p.position.x, z: p.position.z, r: 0.35 };
       B.circles.push(circle); (B.police ||= []).push({ obj: p, circle });
     }
-    crowd(B, { count: 700, area: { minX: -11.5, maxX: 11.5, minZ: -34, maxZ: 26 }, clear: cl, faceTarget: [0, -60], candles: 0.65, kneel: 0.2, seed: 9 });
+    crowd(B, { count: 700, area: { minX: -11.5, maxX: 11.5, minZ: -34, maxZ: 26 }, clear: cl, faceTarget: [0, -60], candles: 0.65, kneel: 0.45, seed: 9 });
     rain(B);
     bounds = { minX: -17.5, maxX: 17.5, minZ: -42, maxZ: 46 };
   }
@@ -889,6 +883,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     update(t, dt, pp) { for (const u of B.updaters) u(t, dt, pp); },
     police: B.police || [],
     setCrowd(m) { B.crowdMode = m; },
+    setRepel(list) { B.repel = list; },
     dispose() {
       scene.remove(root);
       root.traverse((o) => {

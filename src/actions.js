@@ -5,29 +5,31 @@
 import * as THREE from 'three';
 import { Audio } from './audio.js';
 import * as T from './textures.js';
+import { makeVehicle } from './vehicles.js';
+import { makeCharacter } from './people.js';
 
 const TXT = {
   sk: {
-    raidStart: '22:30 – polícia zasahuje', raidObj: 'Vydrž na námestí a chráň plameň sviečky. Vyhýbaj sa vodným delám a autám.',
+    raidStart: '22:30 – polícia zasahuje', raidObj: 'Vydrž na námestí a chráň plameň sviečky. Vyhýbaj sa vodným delám a autám. <kbd>C</kbd> – kľakni si a kry plameň telom.',
     lit: 'Sviečka horí', out: 'Sviečka zhasla – stlač <kbd>F</kbd>', lighting: 'Zapaľuješ…', car: 'Pozor, auto!', hit: 'Zrazilo ťa auto',
     wet: 'Zasiahlo ťa vodné delo', baton: 'Kordón ťa odtlačil obuškami', anna: 'Pani Anna spadla – pomôž jej vstať', annaE: '<kbd>E</kbd> Pomôcť pani Anne', annaOk: 'Ďakujem ti, synku.',
     raidEnd: (p) => `Vydržali ste. Plameň horel ${p} % času.`, time: 'Do konca zásahu',
     keysObj: 'Vytiahni kľúče a štrngaj v rytme námestia.', keysHint: '<kbd>Medzerník</kbd> alebo klik – štrngaj v rytme', keysMeter: 'Námestie',
-    chaseObj: (n) => `Rozdaj letáky (${n}/5). Muž v koženom kabáte ťa sleduje – nenechaj sa dobehnúť. <kbd>Shift</kbd> = beh.`,
-    leaflet: 'Leták odovzdaný', caught: '„Občiansky preukaz!“ Zdržal ťa a zapísal si tvoje meno.', chaseEnd: 'Všetky letáky sú medzi ľuďmi.', chaseClean: 'Všetky letáky sú medzi ľuďmi – a eštebák ťa nechytil.',
+    chaseObj: (n) => `Podaj letáky ľuďom na okraji zhromaždenia (${n}/5). Muž v koženom kabáte ťa sleduje – nenechaj sa dobehnúť. <kbd>Shift</kbd> = beh.`,
+    leaflet: 'Leták odovzdaný', leafletE: '<kbd>E</kbd> Podať leták', caught: '„Občiansky preukaz!“ Zdržal ťa a zapísal si tvoje meno.', chaseEnd: 'Všetky letáky sú medzi ľuďmi.', chaseClean: 'Všetky letáky sú medzi ľuďmi – a eštebák ťa nechytil.',
     sirenObj: 'O 12:00 sa začína generálny štrajk. Dôjdi k siréne pri bráne a spusti ju presne na poludnie.', sirenE: '<kbd>E</kbd> Spustiť sirénu', sirenEarly: 'Ešte nie – počkaj na 12:00',
     sirenOk: 'Presne na poludnie. Celý závod stojí.', sirenLate: 'Siréna znie. Generálny štrajk sa začal.', clock: 'Čas',
     wireObj: 'Železná opona padá. Dôjdi k plotu vľavo od cesty a prestrihni ostnatý drôt.', wireE: 'Drž <kbd>E</kbd> – strihať drôt', wireCut: (n) => `Prestrihnuté ${n}/3`, wireEnd: 'Kúsok ostnatého drôtu si berieš so sebou. Na pamiatku.',
     good: 'Presne!', keysEnd: 'Celé námestie štrngá kľúčmi. Posledné zvonenie.', keysEndWeak: 'Kľúče zneli námestím.',
   },
   en: {
-    raidStart: '10:30 pm – the police move in', raidObj: 'Hold your ground and protect the candle flame. Avoid the water cannons and cars.',
+    raidStart: '10:30 pm – the police move in', raidObj: 'Hold your ground and protect the candle flame. Avoid the water cannons and cars. <kbd>C</kbd> – kneel and shield the flame with your body.',
     lit: 'Candle is burning', out: 'Candle is out – press <kbd>F</kbd>', lighting: 'Lighting…', car: 'Watch out, a car!', hit: 'A car knocked you down',
     wet: 'The water cannon hit you', baton: 'The cordon shoved you back with batons', anna: 'Mrs Anna has fallen – help her up', annaE: '<kbd>E</kbd> Help Mrs Anna', annaOk: 'Thank you, son.',
     raidEnd: (p) => `You held on. The flame burned ${p}% of the time.`, time: 'Until the raid ends',
     keysObj: 'Take out your keys and jingle them in rhythm with the square.', keysHint: '<kbd>Space</kbd> or click – jingle on the beat', keysMeter: 'The square',
-    chaseObj: (n) => `Hand out the leaflets (${n}/5). The man in the leather coat is following you – don't let him catch up. <kbd>Shift</kbd> = run.`,
-    leaflet: 'Leaflet handed over', caught: '“Your papers!” He held you up and wrote down your name.', chaseEnd: 'All the leaflets are out among the people.', chaseClean: 'All the leaflets are out – and the secret policeman never caught you.',
+    chaseObj: (n) => `Hand leaflets to the people at the edge of the gathering (${n}/5). The man in the leather coat is following you – don't let him catch up. <kbd>Shift</kbd> = run.`,
+    leaflet: 'Leaflet handed over', leafletE: '<kbd>E</kbd> Hand over a leaflet', caught: '“Your papers!” He held you up and wrote down your name.', chaseEnd: 'All the leaflets are out among the people.', chaseClean: 'All the leaflets are out – and the secret policeman never caught you.',
     sirenObj: 'The general strike begins at 12:00. Reach the siren by the gate and sound it exactly at noon.', sirenE: '<kbd>E</kbd> Sound the siren', sirenEarly: 'Not yet – wait for 12:00',
     sirenOk: 'Exactly at noon. The whole plant stands still.', sirenLate: 'The siren wails. The general strike has begun.', clock: 'Time',
     wireObj: 'The Iron Curtain is falling. Go to the fence left of the road and cut the barbed wire.', wireE: 'Hold <kbd>E</kbd> – cut the wire', wireCut: (n) => `Cut ${n}/3`, wireEnd: 'You take a piece of barbed wire with you. To remember.',
@@ -40,6 +42,19 @@ const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness:
 const blueGlow = () => new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glowSprite('90,140,255'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
 const box = (g, sx, sy, sz, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
 
+// ruka hráča v pohľade z prvej osoby: rukáv + dlaň; smeruje od tela dopredu (-Z kamery)
+function fpHand(sleeve = 0x2f3a4a) {
+  const g = new THREE.Group();
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.052, 0.42, 10), new THREE.MeshStandardMaterial({ color: sleeve, roughness: 0.9 }));
+  arm.rotation.x = Math.PI / 2; arm.position.z = 0.25; g.add(arm);
+  const skin = new THREE.MeshStandardMaterial({ color: 0xd9a98a, roughness: 0.8 });
+  const palm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.04, 0.1), skin); palm.position.z = 0; g.add(palm);
+  const fingers = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.035, 0.06), skin); fingers.position.set(0, 0.012, -0.07); fingers.rotation.x = 0.5; g.add(fingers);
+  const thumb = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.03, 0.06), skin); thumb.position.set(-0.045, 0.01, -0.03); thumb.rotation.y = 0.5; g.add(thumb);
+  return g;
+}
+const ease = (x) => x * x * (3 - 2 * x);
+
 export function createAction(kind, ctx) {
   return ({ raid, keys, chase, siren, wire }[kind] || keys)(ctx);
 }
@@ -49,7 +64,7 @@ function raid(ctx) {
   const { scene, camera, player, el } = ctx, S = TXT[ctx.lang()];
   const root = new THREE.Group(); scene.add(root);
   if (!camera.parent) scene.add(camera);
-  const DUR = 70;
+  const DUR = 70, RELIGHT = 1.3;
   let t = 0, lit = true, litTime = 0, relight = 0, hits = 0, flash = 0, done = false, lastWater = -9, nextCar = 7;
 
   // sviečka v ruke hráča
@@ -58,13 +73,18 @@ function raid(ctx) {
   const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glowSprite(), color: 0xffb04a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, depthTest: false }));
   flame.position.y = 0.16; flame.scale.setScalar(0.13); candle.add(flame);
   const glow = new THREE.PointLight(0xffa040, 2.2, 7, 1.6); glow.position.set(0.2, -0.1, -0.5); camera.add(glow);
+  const rHand = fpHand(); rHand.position.set(0.005, -0.13, 0.03); rHand.rotation.x = -0.25; candle.add(rHand);
+  // ľavá ruka so zápalkou – príde k knôtu pri zapaľovaní
+  const match = fpHand(); camera.add(match);
+  const stick = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.006, 0.07), new THREE.MeshBasicMaterial({ color: 0xc9a06a })); stick.position.set(0.01, 0.03, -0.11); match.add(stick);
+  const mFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glowSprite(), color: 0xffc060, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, depthTest: false }));
+  mFlame.position.set(0.01, 0.045, -0.145); mFlame.scale.setScalar(0.07); match.add(mFlame);
+  const REST = new THREE.Vector3(-0.45, -0.62, -0.35), WICK = new THREE.Vector3(0.2, -0.2, -0.52);
 
   // cisterny s vodnými delami po stranách námestia
   const truckMat = std(0x55603f), dark = std(0x22262a);
   const jets = [[-15.2, 3, 1], [15.2, -22, -1]].map(([x, z, dir], i) => {
-    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2; root.add(g);
-    box(g, 2.5, 2.4, 5.2, truckMat, 0, 2.0, -1.0); box(g, 2.5, 2.1, 2.0, truckMat, 0, 1.85, 2.6); box(g, 2.4, 0.8, 0.1, dark, 0, 2.3, 3.62);
-    for (const wz of [-2.6, 0.2, 2.6]) for (const wx of [-1.2, 1.2]) box(g, 0.35, 1, 1, dark, wx, 0.5, wz);
+    const g = makeVehicle('cannon', { color: 0x55603f }); g.position.set(x, 0, z); g.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2; root.add(g);
     const beacon = blueGlow(); beacon.position.set(0, 3.5, 2.4); beacon.scale.setScalar(2.4); g.add(beacon);
     const N = 240, geo = new THREE.BufferGeometry(), u = new Float32Array(N), sd = new Float32Array(N * 2);
     for (let k = 0; k < N; k++) { u[k] = Math.random(); sd[k * 2] = Math.random() - 0.5; sd[k * 2 + 1] = Math.random() - 0.5; }
@@ -77,11 +97,9 @@ function raid(ctx) {
   // autá VB vchádzajúce do davu
   const cars = [];
   const spawnCar = () => {
-    const g = new THREE.Group();
-    box(g, 1.6, 0.6, 4, std(0xd8d4b0), 0, 0.65, 0); box(g, 1.5, 0.55, 2, std(0xd8d4b0), 0, 1.2, -0.2); box(g, 1.62, 0.2, 4.02, std(0x3d6b3a), 0, 0.72, 0);
-    box(g, 0.25, 0.14, 0.25, new THREE.MeshBasicMaterial({ color: 0x4070ff }), 0, 1.55, -0.2);
-    const b = blueGlow(); b.position.set(0, 1.7, -0.2); b.scale.setScalar(2.2); g.add(b);
-    for (const hx of [-0.55, 0.55]) { const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glowSprite('255,245,210'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); h.position.set(hx, 0.7, -2.05); h.scale.setScalar(1.3); g.add(h); }
+    const g = makeVehicle('vb', { night: true }); g.rotation.y = Math.PI;   // ide smerom k -Z
+    const b = blueGlow(); b.position.set(0, 1.62, -0.2); b.scale.setScalar(2.2); g.add(b);
+    for (const hx of [-0.6, 0.6]) { const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glowSprite('255,245,210'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); h.position.set(hx, 0.67, 2.15); h.scale.setScalar(1.3); g.add(h); }
     const x = Math.max(-10, Math.min(10, player.x + (Math.random() - 0.5) * 1.5));
     g.position.set(x, 0, Math.min(44, player.z + 46)); root.add(g);
     cars.push({ g, b, hit: false });
@@ -116,6 +134,11 @@ function raid(ctx) {
       t += dt;
       if (lit) litTime += dt;
       if (relight > 0) { relight -= dt; if (relight <= 0) { lit = true; Audio.sfx('blip'); } }
+      // animácia zapálenia: ruka so zápalkou príde ku knôtu a vráti sa
+      const k = relight > 0 ? 1 - relight / RELIGHT : 0, reach = relight > 0 ? ease(Math.min(1, k * 2.2)) * (k > 0.8 ? ease((1 - k) / 0.2) : 1) : 0;
+      match.visible = relight > 0; match.position.lerpVectors(REST, WICK, reach); match.rotation.set(-0.2, -0.9 * reach, 0.3);
+      mFlame.scale.setScalar(0.06 + Math.sin(t * 40) * 0.01);
+      candle.rotation.z = player.kneel ? 0.05 : 0;
       flame.visible = lit; glow.intensity = lit ? 2.2 + Math.sin(t * 19) * 0.25 : 0;
       candle.position.y = -0.33 + Math.sin(player.bob) * 0.008;
 
@@ -139,9 +162,10 @@ function raid(ctx) {
         p.needsUpdate = true;
         if (j.on) {
           const dx = player.x - j.x, dz = player.z - j.z, along = dx * cx + dz * cz, perp = Math.abs(-dx * cz + dz * cx);
-          if (along > 6 && along < j.R + 1 && perp < 0.9 + along * 0.035) {
+          // kto kľačí a chráni plameň telom, toho prúd zasiahne len priamo a neodtlačí ho
+          if (along > 6 && along < j.R + 1 && perp < (player.kneel ? 0.35 : 0.9 + along * 0.035)) {
             douse(S.wet);
-            player.x += cx * dt * 3.2; player.z += cz * dt * 3.2;
+            if (!player.kneel) { player.x += cx * dt * 3.2; player.z += cz * dt * 3.2; }
             if (t - lastWater > 2.5) { lastWater = t; Audio.sfx('water'); }
           }
         }
@@ -174,6 +198,8 @@ function raid(ctx) {
         }
       }
 
+      ctx.world.setRepel([...cars.map((c) => ({ x: c.g.position.x, z: c.g.position.z - 2, r: 1.9 })), ...(marching ? cordon.map((c) => ({ x: c.obj.position.x + 0.4, z: c.obj.position.z, r: 1.1 })) : [])]);
+
       // pani Anna
       if (anna) {
         const o = anna.obj;
@@ -203,7 +229,7 @@ function raid(ctx) {
     },
     key(code) {
       if (done) return;
-      if (code === 'KeyF' && !lit && relight <= 0) relight = 1.0;
+      if (code === 'KeyF' && !lit && relight <= 0) relight = RELIGHT;
       if (code === 'KeyE' && annaState === 1 && this.nearAnna) {
         annaState = 2; anna.obj.userData.setAnim?.('idle'); anna.marker.visible = false;
         el.prompt.classList.add('hidden'); ctx.toast(S.annaOk);
@@ -211,7 +237,7 @@ function raid(ctx) {
     },
     tap() { this.key(this.nearAnna && annaState === 1 ? 'KeyE' : 'KeyF'); },
     dispose() {
-      scene.remove(root); camera.remove(candle); camera.remove(glow);
+      scene.remove(root); camera.remove(candle); camera.remove(glow); camera.remove(match); ctx.world.setRepel([]);
       el.action.classList.add('hidden'); el.flash.style.opacity = 0;
     },
   };
@@ -306,38 +332,80 @@ function beacon(scene, x, z, y = 1.6) {
 
 // ───────────────────────────── letáky a muž v koženom kabáte ─────────────────────────────
 function chase(ctx) {
-  const { scene, player, el } = ctx, S = TXT[ctx.lang()];
-  const spots = [[-9, 12], [9, 16], [-4, 25], [11, 7], [-11, 22]].map(([x, z]) => ({ x, z, m: beacon(scene, x, z) }));
+  const { scene, camera, player, el } = ctx, S = TXT[ctx.lang()];
+  if (!camera.parent) scene.add(camera);
+  // piati ľudia na okraji zhromaždenia – každému treba podať leták
+  const WHO = [['Female_Adult_11', 0x54303a], ['Male_Adult_13', 0x384858], ['Business_Female_02', 0x3b4a3b], ['Male_Adult_04', 0x4b3b2b], ['Female_Adult_09', 0x26303f]];
+  const spots = [[-8.5, 7.2], [7.5, 7.6], [-14.3, -4], [14.4, -9], [1.5, 9.5]].map(([x, z], i) => {
+    const o = makeCharacter({ model: WHO[i][0], coat: WHO[i][1], pants: 0x23252b, idle: 'idle2' });
+    o.position.set(x, 0, z); o.rotation.y = Math.atan2(-x, -30 - z) + 0.4; scene.add(o);
+    const c = { x, z, r: 0.35 }; ctx.world.circles.push(c);
+    return { x, z, o, c, m: beacon(scene, x, z, 2.35), ph: i * 1.7 };
+  });
   const agent = ctx.npcs.find((n) => n.def.id === 'kollar');
-  let t = 0, given = 0, caught = 0, cool = 3, done = false, moving = false, flash = 0;
+  let t = 0, given = 0, caught = 0, cool = 3, done = false, moving = false, flash = 0, give = 0, target = null;
+  // ruka so zväzkom letákov
+  const hand = fpHand(0x2f4f6f); camera.add(hand);
+  const paper = new THREE.MeshStandardMaterial({ color: 0xf2efe4, roughness: 0.9, side: THREE.DoubleSide });
+  const stack = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.012, 0.21), paper); stack.position.set(0, 0.03, -0.06); hand.add(stack);
+  const line = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.03), new THREE.MeshBasicMaterial({ color: 0x1a1a1a })); line.rotation.x = -Math.PI / 2; line.position.set(0, 0.0375, -0.12); hand.add(line);
+  const sheet = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.21), paper); sheet.visible = false; scene.add(sheet);
+  const from = new THREE.Vector3(), to = new THREE.Vector3();
   el.action.classList.remove('hidden');
   const hud = () => { ctx.setObjective(S.chaseObj(given)); el.action.innerHTML = `<div class="bar gold"><i style="width:${given * 20}%"></i></div><div class="row"><span>📄 ${given}/5</span><span>${caught ? '⚠ ' + caught : ''}</span></div>`; };
   hud();
   return {
+    near: null,
     update(dt) {
       t += dt;
+      this.near = null;
       for (const s of spots) {
+        s.o.userData.tick(dt, 0, s.thanks > 0, t + s.ph);
+        if (s.thanks > 0) s.thanks -= dt;
+        const dx = player.x - s.x, dz = player.z - s.z, d = Math.hypot(dx, dz);
+        if (d < 5) { let a = Math.atan2(dx, dz) - s.o.rotation.y; while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; s.o.rotation.y += a * Math.min(1, dt * 4); }
         if (s.done) continue;
-        s.m.rotation.y = t * 2; s.m.position.y = 1.6 + Math.sin(t * 3 + s.x) * 0.1;
-        if (!done && Math.hypot(s.x - player.x, s.z - player.z) < 1.7) { s.done = true; scene.remove(s.m); given++; ctx.toast(S.leaflet); Audio.sfx('blip'); hud(); }
+        s.m.rotation.y = t * 2; s.m.position.y = 2.35 + Math.sin(t * 3 + s.x) * 0.08;
+        if (!done && d < 2.1 && give <= 0) this.near = s;
       }
+      el.prompt.innerHTML = S.leafletE; el.prompt.classList.toggle('hidden', !this.near);
+      // podanie letáka: ruka vpred, hárok preletí k človeku
+      if (give > 0) {
+        give -= dt;
+        const k = 1 - Math.max(0, give) / 0.7, reach = Math.sin(Math.min(1, k * 1.4) * Math.PI);
+        hand.position.set(0.24 - reach * 0.1, -0.3 + reach * 0.06, -0.52 - reach * 0.3);
+        if (k > 0.3) { sheet.visible = true; sheet.position.lerpVectors(from, to, ease(Math.min(1, (k - 0.3) / 0.6))); sheet.rotation.set(-1.2 + k, player.yaw, 0); }
+        if (give <= 0) { sheet.visible = false; target.thanks = 1.6; target = null; }
+      } else hand.position.set(0.24, -0.3 + Math.sin(player.bob) * 0.008, -0.52);
+      hand.rotation.set(0.35, 0.25, 0);
       if (agent && !done) {
         const o = agent.obj, dx = player.x - o.position.x, dz = player.z - o.position.z, d = Math.hypot(dx, dz);
         cool -= dt;
         const go = cool <= 0 && d > 1.0;
         if (go !== moving) { moving = go; o.userData.setAnim?.(go ? 'walk' : 'idle'); }
         if (go) { const sp = 2.75 * dt; o.position.x += (dx / d) * sp; o.position.z += (dz / d) * sp; o.rotation.y = Math.atan2(dx, dz); }
+        ctx.world.setRepel([{ x: o.position.x, z: o.position.z, r: 1.0 }]);
         if (cool <= 0 && d < 1.3) { caught++; cool = 5; flash = 1; ctx.toast(S.caught); hud(); }
       }
       if (flash > 0) flash = Math.max(0, flash - dt * 1.2);
       el.flash.style.background = '#a01818'; el.flash.style.opacity = (flash * 0.6).toFixed(2);
-      if (!done && given >= 5) {
-        done = true; agent?.obj.userData.setAnim?.('idle');
+      if (!done && given >= 5 && give <= 0) {
+        done = true; agent?.obj.userData.setAnim?.('idle'); hand.visible = false;
         ctx.finish({ fx: caught ? { trust: -1 } : { courage: 1 }, flag: caught ? 'caught' : 'leaflets', text: caught ? S.chaseEnd : S.chaseClean });
       }
     },
-    key() {}, tap() {},
-    dispose() { spots.forEach((s) => scene.remove(s.m)); el.action.classList.add('hidden'); el.flash.style.opacity = 0; },
+    key(code) {
+      if (code !== 'KeyE' || !this.near || give > 0 || done) return;
+      const s = this.near; s.done = true; scene.remove(s.m); target = s; give = 0.7; given++;
+      camera.getWorldPosition(from); from.y -= 0.3; to.set(s.x, 1.15, s.z);
+      ctx.toast(S.leaflet); Audio.sfx('blip'); hud();
+    },
+    tap() { this.key('KeyE'); },
+    dispose() {
+      spots.forEach((s) => { scene.remove(s.m); scene.remove(s.o); const i = ctx.world.circles.indexOf(s.c); if (i >= 0) ctx.world.circles.splice(i, 1); });
+      camera.remove(hand); scene.remove(sheet); ctx.world.setRepel([]);
+      el.action.classList.add('hidden'); el.prompt.classList.add('hidden'); el.flash.style.opacity = 0;
+    },
   };
 }
 

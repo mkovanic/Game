@@ -19,7 +19,7 @@ const UI = {
     newGame: 'Nová hra', cont: 'Pokračovať', chapters: 'Kapitoly', lang: 'Jazyk', voice: 'Dabing',
     on: 'zapnutý', off: 'vypnutý', start: 'Začať', next: 'Ďalej', talk: 'Hovoriť',
     history: 'Čo sa naozaj stalo', paused: 'Pauza', resume: 'Pokračovať', menu: 'Hlavné menu',
-    controls: '<b>WASD</b> chôdza · <b>myš</b> rozhliadanie · <b>Shift</b> beh · <b>E</b> hovoriť · <b>medzerník / klik</b> ďalej · <b>1–3</b> voľba · <b>L</b> jazyk · <b>Esc</b> pauza',
+    controls: '<b>WASD</b> chôdza · <b>myš</b> rozhliadanie · <b>Shift</b> beh · <b>C</b> kľaknúť si · <b>E</b> hovoriť / konať · <b>medzerník / klik</b> ďalej · <b>1–3</b> voľba · <b>L</b> jazyk · <b>Esc</b> pauza',
     disclaimer: 'Postavy sú fiktívne. Udalosti, miesta a dátumy sú skutočné – zhrnutia nájdeš na konci každej kapitoly.',
     epilogue: 'Epilóg', theEnd: 'Koniec', courage: 'Odvaha', trust: 'Dôvera', chapter: 'Kapitola', prologue: 'Prológ',
     noVoiceSk: 'Na tomto zariadení chýba slovenský hlas. <b>Mac:</b> Systémové nastavenia → Prístupnosť → Hovorený obsah → Systémový hlas → Spravovať hlasy → Slovenčina. <b>Windows:</b> Nastavenia → Čas a jazyk → Reč → Pridať hlasy → Slovenčina. Najprirodzenejšie hlasy má prehliadač <b>Microsoft Edge</b>.',
@@ -34,7 +34,7 @@ const UI = {
     newGame: 'New game', cont: 'Continue', chapters: 'Chapters', lang: 'Language', voice: 'Voice-over',
     on: 'on', off: 'off', start: 'Begin', next: 'Next', talk: 'Talk to',
     history: 'What really happened', paused: 'Paused', resume: 'Resume', menu: 'Main menu',
-    controls: '<b>WASD</b> walk · <b>mouse</b> look · <b>Shift</b> run · <b>E</b> talk · <b>space / click</b> next · <b>1–3</b> choose · <b>L</b> language · <b>Esc</b> pause',
+    controls: '<b>WASD</b> walk · <b>mouse</b> look · <b>Shift</b> run · <b>C</b> kneel · <b>E</b> talk / act · <b>space / click</b> next · <b>1–3</b> choose · <b>L</b> language · <b>Esc</b> pause',
     disclaimer: 'The characters are fictional. The events, places and dates are real – a summary follows each chapter.',
     epilogue: 'Epilogue', theEnd: 'The End', courage: 'Courage', trust: 'Trust', chapter: 'Chapter', prologue: 'Prologue',
     noVoiceSk: 'No Slovak voice found on this device. <b>Mac:</b> System Settings → Accessibility → Spoken Content → System Voice → Manage Voices → Slovak. <b>Windows:</b> Settings → Time & Language → Speech → Add voices → Slovak. <b>Microsoft Edge</b> has the most natural voices.',
@@ -99,7 +99,7 @@ let mode = 'menu';
 let world = null;
 let npcs = [];
 let talked = {};
-const player = { x: 0, z: 0, yaw: 0, pitch: 0, bob: 0 };
+const player = { x: 0, z: 0, yaw: 0, pitch: 0, bob: 0, kneel: false, eye: 1.65 };
 let chapterDef = null;
 
 function clearChapter() {
@@ -145,7 +145,7 @@ function loadChapter(i) {
     npcs.push({ def: n, obj, label, marker, ph: Math.random() * 6 });
   }
   player.x = chapterDef.spawn[0]; player.z = chapterDef.spawn[1];
-  player.yaw = 0; player.pitch = 0;
+  player.yaw = 0; player.pitch = 0; player.kneel = false;
   Audio.ambience(chapterDef.scene);
   preloadVoice(state.lang, chapterDef.id);
   refreshHud();
@@ -514,7 +514,7 @@ el.dlg.addEventListener('click', () => advance());
 el.prompt.addEventListener('click', () => { if (mode === 'play' && nearNpc) startDialogue(nearNpc); });
 
 window.addEventListener('mousemove', (e) => {
-  if (mode !== 'play') return;
+  if (mode !== 'play' && mode !== 'action') return;
   if (document.pointerLockElement === canvas) {
     // prehliadače občas pošlú po zamknutí kurzora nezmyselný skok – ignorujeme ho
     if (performance.now() - lockedAt < 150 || Math.abs(e.movementX) > 250 || Math.abs(e.movementY) > 250) return;
@@ -533,6 +533,7 @@ function look(dx, dy) {
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyL' && mode !== 'menu') { setLang(state.lang === 'sk' ? 'en' : 'sk'); return; }
+  if ((mode === 'play' || mode === 'action') && e.code === 'KeyC' && !e.repeat) player.kneel = !player.kneel;
   if (mode === 'play') {
     if (e.code === 'KeyE' && nearNpc) startDialogue(nearNpc);
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
@@ -569,7 +570,7 @@ canvas.addEventListener('touchstart', (e) => {
 canvas.addEventListener('touchmove', (e) => {
   for (const t of e.changedTouches) {
     if (touch.move && t.identifier === touch.move.id) { touch.mx = (t.clientX - touch.move.x) / 60; touch.mz = (t.clientY - touch.move.y) / 60; }
-    if (touch.look && t.identifier === touch.look.id) { if (mode === 'play') look((t.clientX - touch.look.x) * 1.6, (t.clientY - touch.look.y) * 1.6); touch.look.x = t.clientX; touch.look.y = t.clientY; }
+    if (touch.look && t.identifier === touch.look.id) { if (mode === 'play' || mode === 'action') look((t.clientX - touch.look.x) * 1.6, (t.clientY - touch.look.y) * 1.6); touch.look.x = t.clientX; touch.look.y = t.clientY; }
   }
 }, { passive: true });
 canvas.addEventListener('touchend', (e) => {
@@ -637,7 +638,8 @@ function tick() {
     if (keys.KeyD || keys.ArrowRight) fx += 1;
     fx += touch.mx; fz += touch.mz;
     const len = Math.hypot(fx, fz);
-    if (len > 0.01) {
+    if (len > 0.3 && player.kneel) player.kneel = false;   // pohybom hráč vstane
+    if (len > 0.01 && !player.kneel) {
       const k = Math.min(1, len) / len;
       fx *= k; fz *= k;
       const sp = (keys.ShiftLeft || keys.ShiftRight ? 6 : 3.2) * dt;
@@ -706,7 +708,8 @@ function tick() {
   world.update(time, dt, player);
 
   const bob = Math.sin(player.bob) * 0.035;
-  camera.position.set(player.x, 1.65 + bob, player.z);
+  player.eye += ((player.kneel ? 0.98 : 1.65) - player.eye) * Math.min(1, dt * 6);
+  camera.position.set(player.x, player.eye + bob, player.z);
   camera.rotation.set(player.pitch, player.yaw, 0);
   (state.quality === 'high' ? composer.render() : renderer.render(scene, camera));
 }

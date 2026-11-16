@@ -273,9 +273,18 @@ function bakeCrowd() {
     const loUv = new Float32Array(rep.length * 2), loPart = new Float32Array(rep.length);
     rep.forEach((i, j) => { loUv[j * 2] = uv.getX(i); loUv[j * 2 + 1] = uv.getY(i); loPart[j] = part.getX(i); });
     const mixer = new THREE.AnimationMixer(inst);
-    const pose = (clip, time) => {
+    const bone = {}; inst.traverse((o) => { if (o.isBone || o.name === 'Bip01') bone[o.name] = o; });
+    const X = new THREE.Vector3(1, 0, 0), bq = new THREE.Quaternion(), bend = (b, a) => b.rotateOnAxis(X.clone().applyQuaternion(b.getWorldQuaternion(bq).invert()), a);
+    const pose = (clip, time, kneel = false) => {
       mixer.stopAllAction();
       const c = clipFor(M, clip), act = mixer.clipAction(c); act.play(); mixer.setTime(time * c.duration);
+      if (kneel) { // kľak na obe kolená: lýtka dozadu, trup klesne tak, aby kolená boli na zemi; hlava sklonená
+        holder.updateMatrixWorld(true);
+        for (const s of ['L', 'R']) { bend(bone[`Bip01_${s}_Calf`], 1.75); holder.updateMatrixWorld(true); bend(bone[`Bip01_${s}_Foot`], 0.7); }
+        bend(bone.Bip01_Head, 0.3); bend(bone.Bip01_Spine1, 0.12);
+        holder.updateMatrixWorld(true);
+        bone.Bip01.position.y -= bone.Bip01_L_Calf.getWorldPosition(v).y - 0.09;
+      }
       holder.updateMatrixWorld(true); mesh.skeleton.update();
       const P = new Float32Array(N * 3);
       for (let i = 0; i < N; i++) { v.fromBufferAttribute(pos, i); mesh.applyBoneTransform(i, v); v.applyMatrix4(mesh.matrixWorld); P[i * 3] = v.x; P[i * 3 + 1] = v.y; P[i * 3 + 2] = v.z; }
@@ -296,7 +305,7 @@ function bakeCrowd() {
     const walk = CROWD_WALKERS.includes(name);
     out.models.push({
       name, mat: crowdMaterial(M.mat), headTop: M.headTop, noHat: HAS_HAT.test(name),
-      idle: [pose('idle', 0.15), pose('idle2', 0.55), pose('crouch', 0.5)],
+      idle: [pose('idle', 0.15), pose('idle2', 0.55), pose('idle', 0.6, true)],
       cheer: [pose('cheer', 0.2), pose('cheer', 0.4), pose('cheer', 0.6)],
       walk: walk ? Array.from({ length: 8 }, (_, i) => pose('walk', i / 8)) : null,
     });
