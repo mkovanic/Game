@@ -3,8 +3,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import sndBin from '../assets/buildings/snd.glb';
+import ukBin from '../assets/buildings/uk.glb';
+import trznicaBin from '../assets/buildings/trznica.glb';
 
-const BINS = { snd: sndBin };
+const BINS = { snd: sndBin, uk: ukBin, trznica: trznicaBin };
 const loaded = {};
 
 export async function initBuildings() {

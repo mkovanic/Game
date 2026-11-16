@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import * as T from './textures.js';
 import { makeCharacter, crowdPoses } from './people.js';
 import { makeBuilding } from './buildings.js';
+import cobbleDiff from '../assets/textures/cobble_diff.jpg';
+import cobbleNor from '../assets/textures/cobble_nor_gl.jpg';
 
 // ───────────────────────────── pomocné ─────────────────────────────
 const matCache = new Map();
@@ -230,6 +232,25 @@ class Builder {
     }
   }
 
+  // budova z Blendera (GLB): priečelie k +Z; sign = [text, šírka, výška, y, z-posun od stredu]
+  landmark(name, cx, cz, sx, sz, { sign = null, lit = false, signStyle = { bg: '#f1ecd9', fg: '#4a3a1c' } } = {}) {
+    const b = makeBuilding(name, { night: this.env.night, lit: lit ? 1.1 : 0.3 });
+    b.position.set(cx, 0, cz);
+    this.add(b);
+    this.collideBox(cx, cz, sx, sz);
+    if (sign) {
+      const t = T.signTex([sign[0]], { ...signStyle, w: 1024, h: Math.round(1024 * sign[2] / sign[1]) });
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(sign[1], sign[2]), new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 }));
+      p.position.set(cx, sign[3], cz + sign[4]);
+      this.add(p);
+    }
+    if (lit && this.env.night) {
+      const L = new THREE.SpotLight(0xffd9a0, 380, 70, 0.8, 0.6, 1.5);
+      L.position.set(cx, 2, cz + sz / 2 + 26); L.target.position.set(cx, 9, cz + sz / 2);
+      this.add(L); this.add(L.target);
+    }
+  }
+
   // historická budova SND (model 36 × 18 m, priečelie k +Z, rizalit s portikom vystupuje o 5 m)
   snd(cx, cz, { sign = null, lit = false } = {}) {
     const b = makeBuilding('snd', { night: this.env.night, lit: lit ? 1.1 : 0.25 });
@@ -306,9 +327,14 @@ class Builder {
   }
 
   ground(kind, { size = 400, rep = 80, color = 0xffffff, rough = 0.95, metal = 0 } = {}) {
-    const tex = T.ground(kind);
+    let tex = T.ground(kind), normalMap = null;
     tex.repeat.set(rep, rep);
-    const g = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ map: tex, color, roughness: rough, metalness: metal }));
+    if (kind === 'cobble') { // fotografická dlažba (Poly Haven, CC0) s normálovou mapou – mokrý lesk pod lampami
+      [tex, normalMap] = [cobbleDiff, cobbleNor].map((src) => { const t = new THREE.TextureLoader().load(src); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(size / 3.4, size / 3.4); t.anisotropy = 8; return t; });
+      tex.colorSpace = THREE.SRGBColorSpace;
+      color = new THREE.Color(color).multiplyScalar(1.25);
+    }
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ map: tex, normalMap, normalScale: new THREE.Vector2(1.2, 1.2), color, roughness: rough, metalness: metal }));
     g.rotation.x = -Math.PI / 2;
     g.receiveShadow = true;
     this.add(g);
@@ -606,6 +632,17 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
   root.add(sky);
   scene.fog = new THREE.FogExp2(env.fog[0], env.fog[1]);
   scene.background = new THREE.Color(env.sky[1]);
+  { // obloha: prechod od obzoru k zenitu, v noci s hviezdami
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256;
+    const c = cv.getContext('2d'), gr = c.createLinearGradient(0, 0, 0, 256);
+    const hz = new THREE.Color(env.sky[1]), top = new THREE.Color(env.sky[0]);
+    gr.addColorStop(0, '#' + top.getHexString()); gr.addColorStop(0.5, '#' + hz.getHexString()); gr.addColorStop(1, '#' + hz.getHexString());
+    c.fillStyle = gr; c.fillRect(0, 0, 512, 256);
+    if (env.night && !env.rain) { c.fillStyle = '#fff'; for (let i = 0; i < 260; i++) { c.globalAlpha = 0.25 + Math.random() * 0.6; c.fillRect(Math.random() * 512, Math.random() * 110, 1, 1); } }
+    const st = new THREE.CanvasTexture(cv); st.colorSpace = THREE.SRGBColorSpace;
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(320, 24, 12), new THREE.MeshBasicMaterial({ map: st, side: THREE.BackSide, fog: false, depthWrite: false }));
+    dome.renderOrder = -1; root.add(dome);
+  }
   root.add(new THREE.HemisphereLight(...env.hemi));
   const sun = new THREE.DirectionalLight(env.sun[0], env.sun[1]);
   sun.position.set(...env.sun[2]);
@@ -662,7 +699,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     B.row({ axis: 'z', fixed: -19, from: -44, to: 46, depth: 12, facing: -1, seed: 13, hMin: 15, hMax: 21 });
     B.row({ axis: 'z', fixed: 19, from: -44, to: 46, depth: 12, facing: 1, seed: 14, hMin: 12, hMax: 21 });
     B.row({ axis: 'x', fixed: 46, from: -19, to: 19, depth: 12, facing: 1, seed: 15 });
-    B.grand(0, -56, 38, 16, 18, { color: 0xcfc6b0, sign: 'UNIVERZITA KOMENSKÉHO' });
+    B.landmark('uk', 0, -56, 40, 19, { sign: ['UNIVERSITAS COMENIANA', 12, 1.3, 18.1, 11.36], signStyle: { bg: '#c9a870', fg: '#5a4526' } });
     for (let z = -36; z <= 40; z += 15) { B.lamp(-16.5, z); B.lamp(16.5, z + 7); }
     for (let z = -30; z <= 36; z += 11) { B.tree(-15, z, z + 7, 1.0); B.tree(15, z + 5, z + 9, 1.0); }
     B.car(-15.2, 24, 0, 0x111214); // čierna Volga
@@ -680,7 +717,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     B.row({ axis: 'z', fixed: -27, from: -46, to: 46, depth: 14, facing: -1, seed: 31, hMin: 15, hMax: 24, roofColor: 0xd0d6dc });
     B.row({ axis: 'z', fixed: 27, from: -46, to: 46, depth: 14, facing: 1, seed: 32, hMin: 15, hMax: 24, roofColor: 0xd0d6dc });
     B.row({ axis: 'x', fixed: 46, from: -27, to: 27, depth: 12, facing: 1, seed: 33, roofColor: 0xd0d6dc });
-    B.row({ axis: 'x', fixed: -46, from: -27, to: 27, depth: 14, facing: -1, seed: 34, hMin: 18, hMax: 24, roofColor: 0xd0d6dc, roof: 'flat' });
+    B.landmark('trznica', 0, -53, 46, 16, { sign: ['STARÁ TRŽNICA', 8.6, 0.7, 4.95, 8.76], signStyle: { bg: '#f8f7f0', fg: '#3a3a3a' }, lit: true });
     B.statue(15, -6, { scale: 1.4, pedestal: [3, 4.5, 3], figures: 3 });
     for (let z = -40; z <= 40; z += 12) { B.lamp(-24, z, { light: z % 24 === 0 }); B.lamp(24, z + 6, { light: (z + 12) % 24 === 0 }); }
     // tribúna
