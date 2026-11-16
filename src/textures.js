@@ -201,14 +201,6 @@ export function flagCS() {
   return toTex(c, false);
 }
 
-export function flagTricolor() {
-  const [c, g] = canvas(300, 200);
-  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 300, 67);
-  g.fillStyle = '#0b4ea2'; g.fillRect(0, 67, 300, 67);
-  g.fillStyle = '#ee1c25'; g.fillRect(0, 134, 300, 66);
-  return toTex(c, false);
-}
-
 export function flagAT() {
   const [c, g] = canvas(300, 200);
   g.fillStyle = '#ed2939'; g.fillRect(0, 0, 300, 200);

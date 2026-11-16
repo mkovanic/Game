@@ -736,7 +736,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     crowd(B, { count: 1100, area: { minX: -22, maxX: 22, minZ: -33, maxZ: 28 }, clear: [...cl, [-1.6, 1.6, -40, 50]], faceTarget: [0, -40], candles: 0.12, seed: 41 });
     const ban = ['SLOBODNÉ VOĽBY', 'DIALÓG', 'KONIEC VLÁDY JEDNEJ STRANY', 'VPN', 'GENERÁLNY ŠTRAJK 27. 11.', 'PRAVDA ZVÍŤAZÍ'];
     ban.forEach((t, i) => B.banner(-16 + i * 6.5, -10 + (i % 3) * 9, t, 0, { w: 3.6 }));
-    for (let i = 0; i < 10; i++) B.flag(-20 + i * 4.4, -26 + (i * 7) % 40, i % 2 ? T.flagCS() : T.flagTricolor(), 3.6);
+    for (let i = 0; i < 10; i++) B.flag(-20 + i * 4.4, -26 + (i * 7) % 40, T.flagCS(), 3.6);
     snow(B);
     bounds = { minX: -25.5, maxX: 25.5, minZ: -34, maxZ: 44 };
   }
@@ -792,7 +792,7 @@ export function buildWorld(scene, kind, { clear = [] } = {}) {
     crowd(B, { count: 280, area: { minX: -18, maxX: 18, minZ: -18, maxZ: 16 }, clear: cl, faceTarget: [0, -24], seed: 51, coats: [0x2b3f63, 0x2b3f63, 0x3a4a6a, 0x5a6a7a, 0x4a4a4a, 0x6b6b5b, 0x7a8a9a] });
     B.banner(-6, -18, 'GENERÁLNY ŠTRAJK 12.00 – 14.00', 0, { w: 5, fg: '#0b4ea2' });
     B.banner(7, -16, 'SME SO ŠTUDENTMI', 0, { w: 3.6 });
-    for (let i = 0; i < 6; i++) B.flag(-14 + i * 5.5, -8 + (i % 2) * 10, i % 2 ? T.flagCS() : T.flagTricolor(), 3.4);
+    for (let i = 0; i < 6; i++) B.flag(-14 + i * 5.5, -8 + (i % 2) * 10, T.flagCS(), 3.4);
     bounds = { minX: -22, maxX: 22, minZ: -21, maxZ: 28 };
   }
 
