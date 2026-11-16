@@ -489,7 +489,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
   B.circles.push(...circles);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), v = new THREE.Vector3(), hv = new THREE.Vector3();
   let frame = -1, lx = 1e9, lz = 1e9;
-  const NEAR2 = 11 * 11;
+  const NEAR2 = 8 * 8;
   const update = (t, dt, pp = { x: 0, z: 0 }) => {
     const f = Math.floor(t * 11);
     const moved = (pp.x - lx) ** 2 + (pp.z - lz) ** 2 > 2.25;

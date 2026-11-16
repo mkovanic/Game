@@ -38,5 +38,8 @@ Na ladenie je v konzole `window.__game` (stav, npcs, startDialogue, advance, cho
   siete sú po meshopt kvantované (polohy vo svete rátaj cez `applyBoneTransform`), výšku nesie uzol `Bip01`.
 - **Budovy (rozpracované):** pilot SND hotový (`tools/buildings/snd.py`). Čakajú: Univerzita Komenského (kap. 1),
   Námestie SNP (kap. 2), chemický závod (kap. 3), priechod Petržalka – Berg (kap. 4); voliteľne CC0 dlažba a obloha z Poly Haven.
+- **Akčné scénky (rozpracované):** `src/actions.js` – `raid` (prológ) a `keys` (kap. 2), spúšťa `startAction()` po finálnom dialógu.
+  Nápady na ďalšie: útek pred ŠtB (kap. 1), siréna štrajku (kap. 3), strihanie drôtu (kap. 4). Nepridávaj svetlá počas hry (prekompilovanie shaderov) – použi sprity.
+  Headless test s reálnym GPU: Playwright `channel: 'chrome'` (swiftshader je príliš pomalý).
 - Overenie v prehliadači: `window.__game.loadChapter(i)` načíta kapitolu bez menu; veľkosť `dist/index.html` držať do ~25 MB (teraz ~8 MB).
 - Každý nový zdroj (model, fotka, textúra) zapíš do README s autorom, licenciou a odkazom.

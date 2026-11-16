@@ -50,6 +50,8 @@ function murmur(gain = 0.15) {
 
 export const Audio = {
   unlock() { ac(); },
+  context() { return ac(); },
+  output() { ac(); return master; },
   setVolume(v) { ac(); master.gain.value = v; },
   ambience(kind) {
     this.stopAmbience();

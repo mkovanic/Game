@@ -30,6 +30,13 @@ Slovenský dabing sa po úprave textov v `src/story.js` pregeneruje takto: `node
 
 Postavy a dav sú realistické otextúrované rigované modely s motion-capture animáciami z knižnice **[Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox)** (autor: Microsoft, licencia MIT) – 18 postáv a 16 animácií na spoločnom skelete (`assets/people/*.glb`). Konverziu robí `tools/people.sh` (Blender `tools/convert.py`: zloženie textúr do atlasu, export GLB; `tools/pack.mjs`: meshopt kompresia cez gltf-transform). Oblečenie sa v shaderi prefarbuje podľa častí tela do tmavších zimných tónov (`look.coat`, `look.pants`), trup je mierne „nafúknutý“ a postavy dostávajú čiapky, šatky a šály. Dav sa kreslí inštancovane zo „zapečených“ póz 8 modelov v dvoch úrovniach detailu.
 
+### Akčné scénky
+
+Po záverečnom rozhovore kapitoly môže nasledovať interaktívna scénka (`src/actions.js`, v `story.js` pole `action`):
+
+- **Prológ – zásah polície:** 70 sekúnd na námestí; vodné delá mieria za hráčom, autá VB vchádzajú do davu. Hráč chráni plameň sviečky (`F` – znova zapáliť) a môže pomôcť spadnutej pani Anne (`E`). Podľa toho, ako dlho plameň horel, získa odvahu, za pomoc dôveru.
+- **Kapitola 2 – štrnganie kľúčmi:** `Medzerník` / klik v rytme; čím presnejšie, tým viac sa pridáva celé námestie.
+
 ### Budovy
 
 Historická budova SND v prológu je vymodelovaná skriptom v Blenderi (`tools/buildings/snd.py` → `assets/buildings/snd.glb`, ~9 400 trojuholníkov, 120 kB) podľa fotografie [Bratislava Hviezdoslavovo nam opera SND.jpg](https://commons.wikimedia.org/wiki/File:Bratislava_Hviezdoslavovo_nam_opera_SND.jpg) (autor: Peter Zelizňák, public domain, Wikimedia Commons). Fotka slúžila len ako predloha proporcií a farieb; model neobsahuje žiadne textúry z nej. Ostatné scény sú zatiaľ procedurálne (`src/world.js`).

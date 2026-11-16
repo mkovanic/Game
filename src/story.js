@@ -15,6 +15,7 @@ export const CHAPTERS = [
   // ───────────────────────────── PROLÓG ─────────────────────────────
   {
     id: 'candle',
+    action: 'raid',
     scene: 'candle',
     date: { sk: '25. marca 1988, 22:00', en: '25 March 1988, 10 pm' },
     place: { sk: 'Hviezdoslavovo námestie, Bratislava', en: 'Hviezdoslav Square, Bratislava' },
@@ -161,6 +162,7 @@ export const CHAPTERS = [
   // ───────────────────────────── KAPITOLA 2 ─────────────────────────────
   {
     id: 'square',
+    action: 'keys',
     scene: 'square',
     date: { sk: 'Koniec novembra 1989, večer', en: 'Late November 1989, evening' },
     place: { sk: 'Námestie SNP, Bratislava', en: 'SNP Square, Bratislava' },

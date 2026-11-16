@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CHAPTERS, CAST, epilogue } from './story.js';
 import { buildWorld } from './world.js';
+import { createAction } from './actions.js';
 import { initBuildings } from './buildings.js';
 import { initPeople, makeCharacter, crowdPoses, peopleDebug } from './people.js';
 import { Audio } from './audio.js';
@@ -89,7 +90,7 @@ const $ = (id) => document.getElementById(id);
 const el = {
   menu: $('menu'), card: $('card'), hud: $('hud'), dlg: $('dialogue'), pause: $('pause'), fade: $('fade'),
   speaker: $('speaker'), line: $('line'), choices: $('choices'), hint: $('hint'),
-  prompt: $('prompt'), objective: $('objective'), chapterTag: $('chapterTag'), toast: $('toast'), stats: $('stats'), lookHint: $('lookHint'),
+  prompt: $('prompt'), objective: $('objective'), chapterTag: $('chapterTag'), toast: $('toast'), action: $('action'), flash: $('flash'), stats: $('stats'), lookHint: $('lookHint'),
 };
 const show = (e, on = true) => e.classList.toggle('hidden', !on);
 
@@ -102,6 +103,7 @@ const player = { x: 0, z: 0, yaw: 0, pitch: 0, bob: 0 };
 let chapterDef = null;
 
 function clearChapter() {
+  if (action) { action.dispose(); action = null; }
   if (menuWorld) { menuWorld.dispose(); menuWorld = null; }
   if (world) world.dispose();
   npcs.forEach((n) => scene.remove(n.obj));
@@ -203,6 +205,22 @@ function startPlay() {
   mode = 'play';
   show(el.hud); show(el.lookHint, !document.pointerLockElement);
   requestLock();
+}
+
+// akčná scénka po záverečnom rozhovore kapitoly
+let action = null;
+function startAction() {
+  mode = 'action';
+  requestLock();
+  action = createAction(chapterDef.action, {
+    scene, camera, player, npcs, el, toast, lang: () => state.lang,
+    setObjective: (html) => (el.objective.innerHTML = `<b>${L().objective}:</b> ${html}`),
+    finish: ({ fx, flag, text, delay = 2800 }) => {
+      applyFx({ fx: fx && Object.keys(fx).length ? fx : null, flag });
+      el.objective.innerHTML = text;
+      setTimeout(() => { if (!action) return; action.dispose(); action = null; chapterComplete(); }, delay);
+    },
+  });
 }
 
 function chapterComplete() {
@@ -322,8 +340,10 @@ function renderPause() {
   $('pVoice').onclick = () => { state.voice = !state.voice; Voice.enabled = state.voice; save(); renderPause(); };
   el.pause.querySelectorAll('[data-lang]').forEach((b) => (b.onclick = () => setLang(b.dataset.lang)));
 }
+let pausedFrom = 'play';
 function pause() {
-  if (mode !== 'play') return;
+  if (mode !== 'play' && mode !== 'action') return;
+  pausedFrom = mode;
   mode = 'paused';
   document.exitPointerLock?.();
   renderPause();
@@ -331,7 +351,7 @@ function pause() {
 }
 function resume() {
   show(el.pause, false);
-  mode = 'play';
+  mode = pausedFrom;
   requestLock();
 }
 
@@ -464,7 +484,7 @@ function endDialogue() {
   const wasMain = dlg.startedFrom === d.start;
   if (wasMain) talked[d.id] = true;
   dlg.npc = null; dlg.node = null;
-  if (wasMain && d.final) { chapterComplete(); return; }
+  if (wasMain && d.final) { if (chapterDef.action) startAction(); else chapterComplete(); return; }
   mode = 'play';
   requestLock();
 }
@@ -484,7 +504,8 @@ document.addEventListener('pointerlockchange', () => {
 });
 
 canvas.addEventListener('click', () => {
-  if (mode === 'play' && !document.pointerLockElement) requestLock();
+  if (mode === 'action') { if (!document.pointerLockElement) requestLock(); action?.tap(); }
+  else if (mode === 'play' && !document.pointerLockElement) requestLock();
   else if (mode === 'dialogue') advance();
 });
 el.dlg.addEventListener('click', () => advance());
@@ -513,6 +534,9 @@ window.addEventListener('keydown', (e) => {
   if (mode === 'play') {
     if (e.code === 'KeyE' && nearNpc) startDialogue(nearNpc);
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
+  } else if (mode === 'action') {
+    if (e.code === 'Space') e.preventDefault();
+    if (e.code === 'Escape' || e.code === 'KeyP') pause(); else action?.key(e.code);
   } else if (mode === 'dialogue') {
     if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') { e.preventDefault(); advance(); }
     const d = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[e.code];
@@ -527,7 +551,7 @@ let wasLocked = false, lockedAt = 0;
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === canvas;
   if (locked) lockedAt = performance.now();
-  if (!locked && wasLocked && mode === 'play') pause();
+  if (!locked && wasLocked && (mode === 'play' || mode === 'action')) pause();
   wasLocked = locked;
 });
 
@@ -538,6 +562,7 @@ canvas.addEventListener('touchstart', (e) => {
     else if (!touch.look) touch.look = { id: t.identifier, x: t.clientX, y: t.clientY };
   }
   if (mode === 'dialogue') advance();
+  if (mode === 'action' && e.changedTouches[0].clientX > window.innerWidth * 0.45) action?.tap();
 }, { passive: true });
 canvas.addEventListener('touchmove', (e) => {
   for (const t of e.changedTouches) {
@@ -602,7 +627,7 @@ function tick() {
   }
   if (!world) return;
 
-  if (mode === 'play') {
+  if (mode === 'play' || mode === 'action') {
     let fx = 0, fz = 0;
     if (keys.KeyW || keys.ArrowUp) fz -= 1;
     if (keys.KeyS || keys.ArrowDown) fz += 1;
@@ -623,11 +648,12 @@ function tick() {
     // najbližšia postava
     nearNpc = null;
     let best = 2.8;
-    for (const n of npcs) {
+    for (const n of mode === 'play' ? npcs : []) {
       const d = Math.hypot(n.obj.position.x - player.x, n.obj.position.z - player.z);
       if (d < best) { best = d; nearNpc = n; }
     }
-    if (nearNpc) {
+    if (mode === 'action') { /* výzvy riadi scénka */ }
+    else if (nearNpc) {
       el.prompt.innerHTML = `<kbd>E</kbd> ${L().talk}: <b>${tr(nearNpc.def.name)}</b>`;
       show(el.prompt);
     } else show(el.prompt, false);
@@ -673,6 +699,8 @@ function tick() {
     n.label.visible = d < 14;
   }
 
+  if (mode === 'action' && action) action.update(dt);
+
   world.update(time, dt, player);
 
   const bob = Math.sin(player.bob) * 0.035;
@@ -703,4 +731,4 @@ el.menu.innerHTML = '<div class="menu-inner"><div class="sub">Načítavam… / L
 Promise.all([initPeople(), initBuildings()]).then(() => { openMenu(); tick(); });
 
 // ladenie / automatické testy
-window.__game = { voiceDebug, people: peopleDebug, loadChapter: (i) => { show(el.menu, false); loadChapter(i); }, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };
+window.__game = { voiceDebug, startAction, get action() { return action; }, people: peopleDebug, loadChapter: (i) => { show(el.menu, false); loadChapter(i); }, poses: crowdPoses, renderer, player, state, get mode() { return mode; }, get npcs() { return npcs; }, startDialogue: (i) => startDialogue(npcs[i]), advance, choose };

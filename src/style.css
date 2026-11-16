@@ -108,3 +108,19 @@ body.talking::before { height: 9vh; }
 body.talking #chapterTag, body.talking #objective, body.talking #stats, body.talking #crosshair { opacity: 0; transition: opacity .4s; }
 #dialogue { backdrop-filter: blur(10px); background: linear-gradient(180deg, rgba(14,16,22,.72), rgba(8,9,13,.9)); border-left: 3px solid var(--accent); border-radius: 4px 16px 16px 4px; }
 #line { text-wrap: pretty; }
+
+/* akčné scénky */
+#action { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+#action .bar { height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+#action .bar i { display: block; height: 100%; background: #8fb4e6; transition: width .15s linear; }
+#action .bar.gold i { background: var(--accent); }
+#action .row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+#action .ok { color: var(--accent); } #action .warn { color: #ff8a70; font-weight: 700; animation: blink 1s infinite; }
+#action kbd, #prompt kbd { background: rgba(255,255,255,.14); border-radius: 4px; padding: 1px 6px; font: inherit; font-weight: 700; }
+#action .beat { position: absolute; left: 50%; top: calc(50vh - 56px); width: 80px; height: 80px; margin-left: -40px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); }
+#action .beat i { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--accent); }
+#action.hit .beat { animation: beatHit .25s ease; }
+@keyframes beatHit { 0% { background: rgba(255,200,90,.55); } 100% { background: transparent; } }
+@keyframes blink { 50% { opacity: .45; } }
+#flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: screen; }
+@media (max-width: 1100px) { #action { top: 124px; } }

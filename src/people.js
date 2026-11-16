@@ -193,7 +193,7 @@ export function makeCharacter(look = {}) {
     attach(B.R_Hand, c, h.lerp(f, 0.7).add(new THREE.Vector3(0, 0.02, 0)));
   }
   const mixer = new THREE.AnimationMixer(inner);
-  const idle = mixer.clipAction(clipFor(M, look.idle || (Math.random() < 0.5 ? 'idle' : 'idle3')));
+  let idle = mixer.clipAction(clipFor(M, look.idle || (Math.random() < 0.5 ? 'idle' : 'idle3')));
   const talk = mixer.clipAction(clipFor(M, 'talk'));
   idle.play(); idle.time = Math.random() * idle.getClip().duration;
   mixer.update(0);
@@ -203,6 +203,12 @@ export function makeCharacter(look = {}) {
   let hy = 0, speaking = false;
   root.userData = {
     flame,
+    // zmení základnú animáciu (napr. 'crouch', 'idle', 'clap')
+    setAnim(name) {
+      const a = mixer.clipAction(clipFor(M, name));
+      if (a === idle) return;
+      a.reset().play(); idle.crossFadeTo(a, 0.5, false); idle = a;
+    },
     // dt, cieľové natočenie hlavy (rad), či postava práve hovorí
     tick(dt, yaw, talking, t) {
       if (talking !== speaking) {
