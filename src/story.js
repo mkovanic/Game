@@ -507,3 +507,29 @@ export function epilogue(state, lang) {
   en.push('On 1 January 1993 the independent Slovak Republic was born. The freedom they stood for in the squares is not to be taken for granted – it has to be protected every day.');
   return (lang === 'sk' ? sk : en).join('\n\n');
 }
+
+// Odkaz autora – zobrazuje sa na webe (tools/build-site.mjs) aj na konci hry po epilógu. Je to názor autora, nie historický výklad.
+export const AUTHOR_NOTE = {
+  kicker: { sk: 'Odkaz autora', en: "Author's note" },
+  title: { sk: 'Sloboda nie je položka v rozpočte', en: 'Freedom is not a budget line' },
+  body: {
+    sk: [
+      '17. november 1989 nám vrátil slobodu. V roku 2025 mu vláda Roberta Fica a jej parlamentná väčšina zobrali voľno. Deň, keď padol komunistický režim, je na Slovensku opäť obyčajným pracovným dňom. Vraj sa tým šetrí.',
+      'Neverím, že išlo o peniaze. Kto berie ľuďom deň, keď si pripomínajú slobodu, chce, aby na ňu zabudli. A krajina, ktorá zabudne, ako ľahko sa sloboda stráca, o ňu môže prísť znova.',
+      'V novembri 1989 stačili sviečky a kľúče. Dnes stačí nezabudnúť a nemlčať. Sedemnásty november si môžeme pripomínať aj bez povolenia – tak ako vtedy.',
+      'Túto hru som spravil preto, aby si November ’89 mohol každý prejsť vlastnými nohami. Zadarmo, bez reklám, pre každého.',
+    ],
+    en: [
+      '17 November 1989 gave us our freedom back. In 2025 the government of Robert Fico and its majority in parliament took away the day off. The day the communist regime fell is once again an ordinary working day in Slovakia. Supposedly to save money.',
+      'I do not believe it was about money. Whoever takes away the day on which people remember freedom wants them to forget it. And a country that forgets how easily freedom is lost can lose it again.',
+      'In November 1989, candles and keys were enough. Today it is enough not to forget, and not to stay silent. We can mark the seventeenth of November without permission – just as people did then.',
+      'I made this game so that anyone can walk through November 1989 on their own feet. Free, without ads, for everyone.',
+    ],
+  },
+  sourcesLabel: { sk: 'Fakty v tomto odkaze', en: 'The facts behind this note' },
+  sources: [
+    ['TASR: Deň boja za slobodu je po novom pracovný', 'https://www.teraz.sk/slovensko/den-boja-za-slobodu-je-po-novom-pracovn/921011-clanok.html'],
+    ['Úrad vlády SR: Štátne sviatky', 'https://www.vlada.gov.sk/slovensko/statne-sviatky/'],
+    ['SITA: Študenti protestujú proti zrušeniu voľna na 17. november', 'https://sita.sk/vskolstve/studenti-protestuju-proti-zruseniu-volna-na-17-november-tvrdia-ze-ide-o-utok-na-pamat-a-obcianske-hodnoty/'],
+  ],
+};

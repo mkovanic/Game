@@ -49,7 +49,7 @@ export const Voice = {
     const list = this.voicesFor(lang);
     if (!list.length) return null;
     const pref = lang === 'en' ? /en-gb/i : /sk-sk/i;
-    let best = null, bestScore = -1;
+    let best = list[0], bestScore = -Infinity;
     for (const v of list) {
       let s = 0;
       if (/natural|neural|online|premium|enhanced|siri/i.test(v.name)) s += 6;

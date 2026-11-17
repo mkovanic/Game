@@ -1,7 +1,7 @@
 // Zostaví web na nasadenie do priečinka site/: úvodná stránka (SK/EN) a podstránky o historických
 // udalostiach pre vyhľadávače, hra v /hra/, sitemap.xml a robots.txt.
 //   SITE_URL=https://17november.eu node tools/build-site.mjs
-import { CHAPTERS } from '../src/story.js';
+import { CHAPTERS, AUTHOR_NOTE } from '../src/story.js';
 import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync } from 'node:fs';
 
 const SITE = (process.env.SITE_URL || 'https://17november.eu').replace(/\/$/, '');
@@ -79,7 +79,7 @@ h2{font-size:30px;margin:56px 0 14px}h3{font-size:21px;margin:0 0 6px}
 .card small,.meta{font:13px system-ui,sans-serif;color:var(--accent);letter-spacing:.4px;text-transform:uppercase}
 .card p{margin:8px 0 10px;font-size:15.5px;color:#d6d3cc}
 ul{padding-left:22px}li{margin:6px 0}figure{margin:26px 0}figure img{width:100%;height:auto;border-radius:12px;display:block}
-article p{max-width:760px}footer{color:var(--muted);font:14px/1.6 system-ui,sans-serif;border-top:1px solid var(--line);margin-top:64px;padding-top:22px;padding-bottom:40px}
+article p{max-width:760px}.note{border-left:3px solid var(--accent);padding:6px 0 6px 22px;margin:48px 0 8px}.note .k{font:600 13px/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}.note h2{margin-top:10px}.note p{max-width:760px}.note .srcs{font:14px/1.6 system-ui,sans-serif;color:var(--muted)}footer{color:var(--muted);font:14px/1.6 system-ui,sans-serif;border-top:1px solid var(--line);margin-top:64px;padding-top:22px;padding-bottom:40px}
 .cta{text-align:center;margin:56px 0 0;padding:36px 20px;background:var(--panel);border:1px solid var(--line);border-radius:14px}`;
 
 const page = ({ lang, path, alt, title, desc, image, ld, body }) => `<!doctype html>
@@ -129,6 +129,7 @@ for (const lang of ['sk', 'en']) {
 <figure><img src="/img/zasah-vodne-dela.jpg" alt="${esc(lang === 'sk' ? 'Zásah vodných diel na Sviečkovej manifestácii v hre' : 'Water cannons at the Candle Demonstration in the game')}" width="1280" height="720" loading="lazy"></figure>
 <h2>${t.do}</h2><ul>${t.doList.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
 <h2>${t.chapters}</h2><div class="grid">${cards}</div>
+<section class="note" id="odkaz"><div class="k">${esc(AUTHOR_NOTE.kicker[lang])}</div><h2>${esc(AUTHOR_NOTE.title[lang])}</h2>${AUTHOR_NOTE.body[lang].map((p) => `<p>${esc(p)}</p>`).join('')}<p class="srcs">${esc(AUTHOR_NOTE.sourcesLabel[lang])}: ${AUTHOR_NOTE.sources.map(([n, u]) => `<a href="${u}" rel="noopener">${esc(n)}</a>`).join(' · ')}</p></section>
 <h2>${t.school}</h2><p>${esc(t.schoolP)}</p>
 <h2>${t.controls}</h2><p>${esc(t.controlsP)}</p>
 <div class="cta"><a class="btn" href="/${t.game}">▶ ${t.play}</a><p class="small">${t.free}</p></div>
