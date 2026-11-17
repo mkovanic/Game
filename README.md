@@ -80,8 +80,8 @@ Na web ide hra spolu s úvodnou stránkou a podstránkami o historických udalos
 
 ```bash
 npm run build                                  # hra -> dist/index.html
-SITE_URL=https://17november.kovanic.sk npm run site   # web -> site/ (úvod SK/EN, /historia/…, /hra/, sitemap.xml, robots.txt)
-docker buildx build --platform linux/amd64 --build-arg SITE_URL=https://17november.kovanic.sk \
+SITE_URL=https://17november.eu npm run site   # web -> site/ (úvod SK/EN, /historia/…, /hra/, sitemap.xml, robots.txt)
+docker buildx build --platform linux/amd64 --build-arg SITE_URL=https://17november.eu \
   -t registry.kovanic.sk/matokovanic/sviecky-a-kluce:1.0.0 --push .
 ```
 

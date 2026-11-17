@@ -1,8 +1,8 @@
 # Sviečky a kľúče – statický web (úvodná stránka + hra) na nginx.
-#   docker buildx build --platform linux/amd64 --build-arg SITE_URL=https://17november.kovanic.sk -t <registry>/sviecky-a-kluce:<verzia> --push .
+#   docker buildx build --platform linux/amd64 --build-arg SITE_URL=https://17november.eu -t <registry>/sviecky-a-kluce:<verzia> --push .
 FROM node:22-alpine AS site
 WORKDIR /app
-ARG SITE_URL=https://17november.kovanic.sk
+ARG SITE_URL=https://17november.eu
 COPY package.json ./
 COPY src/story.js src/story.js
 COPY tools/build-site.mjs tools/build-site.mjs

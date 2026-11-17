@@ -1,10 +1,10 @@
 // Zostaví web na nasadenie do priečinka site/: úvodná stránka (SK/EN) a podstránky o historických
 // udalostiach pre vyhľadávače, hra v /hra/, sitemap.xml a robots.txt.
-//   SITE_URL=https://17november.kovanic.sk node tools/build-site.mjs
+//   SITE_URL=https://17november.eu node tools/build-site.mjs
 import { CHAPTERS } from '../src/story.js';
 import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync, existsSync } from 'node:fs';
 
-const SITE = (process.env.SITE_URL || 'https://17november.kovanic.sk').replace(/\/$/, '');
+const SITE = (process.env.SITE_URL || 'https://17november.eu').replace(/\/$/, '');
 const OUT = 'site';
 rmSync(OUT, { recursive: true, force: true });
 const w = (path, html) => { mkdirSync(`${OUT}/${path}`.replace(/\/[^/]*$/, ''), { recursive: true }); writeFileSync(`${OUT}/${path}`, html); };
