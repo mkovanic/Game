@@ -52,3 +52,6 @@ Na ladenie je v konzole `window.__game` (stav, npcs, startDialogue, advance, cho
 - **Nasadenie:** `npm run site` (tools/build-site.mjs) → `site/`; `Dockerfile` (nginx) + `docker-compose.stack.yml` (Portainer Swarm,
   port 5496, doména cez Nginx Proxy Manager). Cieľ: `https://17november.eu`. Obraz: `registry.kovanic.sk/matokovanic/sviecky-a-kluce:<verzia>`
   (nikdy neprepisuj už pushnutý tag). Snímky pre web: `web/img/`. Dabing je teraz SK aj EN cez edge-tts (Kokoro sa už nepoužíva).
+- **PostHog (voliteľný):** kľúč sa dáva pri builde obrazu `--build-arg POSTHOG_KEY=phc_…` (+ `POSTHOG_HOST`, predvolene EU).
+  Bez kľúča sa nič nevkladá. Režim bez cookies (`persistence: 'memory'`), bez nahrávania. Udalosti hry: `track()` v `main.js`
+  (`chapter_started`, `action_started`, `chapter_completed`, `game_finished`, `author_note_seen`).

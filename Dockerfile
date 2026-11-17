@@ -3,12 +3,15 @@
 FROM node:22-alpine AS site
 WORKDIR /app
 ARG SITE_URL=https://17november.eu
+# PostHog je voliteľný: --build-arg POSTHOG_KEY=phc_… (projektový kľúč, je verejný)
+ARG POSTHOG_KEY=
+ARG POSTHOG_HOST=https://eu.i.posthog.com
 COPY package.json ./
 COPY src/story.js src/story.js
 COPY tools/build-site.mjs tools/build-site.mjs
 COPY dist dist
 COPY web web
-RUN SITE_URL=$SITE_URL node tools/build-site.mjs
+RUN SITE_URL=$SITE_URL POSTHOG_KEY=$POSTHOG_KEY POSTHOG_HOST=$POSTHOG_HOST node tools/build-site.mjs
 
 FROM nginx:1.27-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf

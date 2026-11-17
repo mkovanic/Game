@@ -125,9 +125,15 @@ function fade(fn) {
   setTimeout(() => { fn(); setTimeout(() => el.fade.classList.remove('on'), 60); }, 650);
 }
 
+// anonymná štatistika – na webe ju obsluhuje PostHog, pri spustení zo súboru (file://) sa nič neposiela
+function track(event, props) {
+  try { window.posthog?.capture(event, { lang: state.lang, ...props }); } catch { /* štatistika nesmie rozbiť hru */ }
+}
+
 function loadChapter(i) {
   clearChapter();
   state.chapter = i;
+  track('chapter_started', { chapter: i, chapter_id: CHAPTERS[i].id });
   chapterDef = CHAPTERS[i];
   talked = {};
   asked = {};
@@ -231,6 +237,7 @@ function startPlay() {
 let action = null;
 function startAction() {
   mode = 'action';
+  track('action_started', { chapter: state.chapter, action: chapterDef.action });
   requestLock();
   if (chapterDef.brief) Voice.speak(tr(chapterDef.brief), state.lang, CAST.narrator.voice, `${chapterDef.id}.brief`);
   const mine = (action = createAction(chapterDef.action, {
@@ -246,6 +253,7 @@ function startAction() {
 
 function chapterComplete() {
   mode = 'card';
+  track('chapter_completed', { chapter: state.chapter, chapter_id: chapterDef.id });
   setTimeout(() => {
     const c = chapterDef;
     showCard({
@@ -264,6 +272,7 @@ function chapterComplete() {
 }
 
 function endGame() {
+  { const f = state.flags; track('game_finished', { helpedAnna: !!f.helpedAnna, caught: !!f.caught, keysRang: !!f.keysRang, sirenOnTime: !!f.sirenOnTime, wire: !!f.wire, courage: state.stats.courage, trust: state.stats.trust }); }
   state.maxChapter = CHAPTERS.length - 1;
   save();
   showCard({
@@ -272,7 +281,7 @@ function endGame() {
     body: epilogue(state, state.lang),
     button: L().next,
     // po epilógu nasleduje odkaz autora (názor, bez dabingu)
-    onNext: () => showCard({
+    onNext: () => (track('author_note_seen'), showCard({
       kicker: AUTHOR_NOTE.kicker[state.lang],
       title: AUTHOR_NOTE.title[state.lang],
       body: AUTHOR_NOTE.body[state.lang].join('\n\n'),
@@ -280,7 +289,7 @@ function endGame() {
       button: L().menu,
       speak: false,
       onNext: () => { clearChapter(); openMenu(); },
-    }),
+    })),
   });
 }
 
