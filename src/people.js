@@ -177,6 +177,35 @@ function candleArm(upper, fore, hand, rootObj, rq) {
   bendIn(upper, AY, (_hp.x < 0 ? 1 : -1) * 0.42, rq);
 }
 
+// Zovrie pravú ruku okolo zvislej sviečky: dlaň sa natočí ukazovákom nahor, prsty sa zavrú do päste.
+// `get(name)` vracia kosť (napr. 'R_Hand'); výsledkom je bod úchopu vo svete, kam patrí sviečka.
+const CURL = 1;   // smer zatvárania prstov pre kostru Rocketbox
+const _ga = new THREE.Vector3(), _gd = new THREE.Vector3(), _gb = new THREE.Vector3(), _gt = new THREE.Vector3(), _gn = new THREE.Vector3();
+function gripCandle(get, out) {
+  const hand = get('R_Hand'), f1 = get('R_Finger1'), f2 = get('R_Finger2'), f4 = get('R_Finger4');
+  if (!hand || !f1 || !f2 || !f4) return null;
+  const across = () => { f4.getWorldPosition(_gb); f1.getWorldPosition(_gt); _gb.sub(_gt); return _gb.addScaledVector(_gd, -_gb.dot(_gd)).normalize(); };
+  hand.getWorldPosition(_ga); f2.getWorldPosition(_gd).sub(_ga).normalize();   // smer prstov
+  across();
+  _gn.set(0, -1, 0).addScaledVector(_gd, _gd.y).normalize();                     // „dole“ kolmo na prsty
+  bendIn(hand, _gd, Math.atan2(_gt.crossVectors(_gb, _gn).dot(_gd), _gb.dot(_gn)), null);
+  hand.getWorldPosition(_ga); f2.getWorldPosition(_gd).sub(_ga).normalize();
+  const ax = across().clone();
+  for (const i of [1, 2, 3, 4]) {
+    const a = get(`R_Finger${i}`), b = get(`R_Finger${i}1`), c = get(`R_Finger${i}2`);
+    if (a) bendIn(a, ax, CURL * 1.05, null);
+    if (b) bendIn(b, ax, CURL * 1.2, null);
+    if (c) bendIn(c, ax, CURL * 0.7, null);
+  }
+  const t0 = get('R_Finger0'), t1 = get('R_Finger01');
+  if (t0) bendIn(t0, ax, CURL * 0.35, null);
+  if (t1) bendIn(t1, ax, CURL * 0.5, null);
+  // stred „tunela“ v pästi: priemer kĺbov zovretých prstov
+  out.set(0, 0, 0); let n = 0;
+  for (const i of [1, 2, 3, 4]) for (const k of ['', '1', '2']) { const j = get(`R_Finger${i}${k}`); if (j) { out.add(j.getWorldPosition(_gt)); n++; } }
+  return out.multiplyScalar(1 / n);
+}
+
 export function makeCharacter(look = {}) {
   const M = models[look.model] || models.Male_Adult_03;
   const inner = skClone(M.scene);
@@ -200,10 +229,10 @@ export function makeCharacter(look = {}) {
     attach(B.Neck, s, n);
   }
   let flame = null, candleObj = null;
-  const rq = new THREE.Quaternion(), cq = new THREE.Quaternion();
+  const rq = new THREE.Quaternion(), cq = new THREE.Quaternion(), gp = new THREE.Vector3();
   if (look.candle && B.R_Hand) {
     const c = new THREE.Group();
-    c.add(new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.2, 8), stdm(0xf3ecd8)));
+    c.add(new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.2, 8), stdm(0xf3ecd8)));
     flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: look.glow, color: 0xffb04a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     flame.position.y = 0.15; flame.scale.setScalar(0.2);
     c.add(flame);
@@ -244,6 +273,10 @@ export function makeCharacter(look = {}) {
         // ruka so sviečkou zdvihnutá pred hruď, sviečka stále zvislo
         root.getWorldQuaternion(rq);
         candleArm(B.R_UpperArm, B.R_Forearm, B.R_Hand, root, rq);
+        if (gripCandle((n) => B[n], gp)) {
+          B.R_Hand.updateWorldMatrix(true, false);
+          gp.y += 0.04; candleObj.position.copy(B.R_Hand.worldToLocal(gp));   // sviečka prechádza päsťou, väčšina trčí nahor
+        }
         candleObj.quaternion.copy(B.R_Hand.getWorldQuaternion(cq).invert()).multiply(rq);
       }
       hy += (yaw - hy) * Math.min(1, dt * 4);
@@ -311,7 +344,8 @@ function bakeCrowd() {
         holder.updateMatrixWorld(true);
         bone.Bip01.position.y -= bone.Bip01_L_Calf.getWorldPosition(v).y - 0.09;
       }
-      if (candle) { holder.updateMatrixWorld(true); candleArm(bone.Bip01_R_UpperArm, bone.Bip01_R_Forearm, bone.Bip01_R_Hand, holder, null); }
+      let grip = null;
+      if (candle) { holder.updateMatrixWorld(true); candleArm(bone.Bip01_R_UpperArm, bone.Bip01_R_Forearm, bone.Bip01_R_Hand, holder, null); grip = gripCandle((n) => bone['Bip01_' + n], new THREE.Vector3()); }
       holder.updateMatrixWorld(true); mesh.skeleton.update();
       const P = new Float32Array(N * 3);
       for (let i = 0; i < N; i++) { v.fromBufferAttribute(pos, i); mesh.applyBoneTransform(i, v); v.applyMatrix4(mesh.matrixWorld); P[i * 3] = v.x; P[i * 3 + 1] = v.y; P[i * 3 + 2] = v.z; }
@@ -327,7 +361,7 @@ function bakeCrowd() {
       lo.setIndex(loIdx); lo.computeVertexNormals();
       const hp = new THREE.Vector3(); head.getWorldPosition(hp);
       hi.userData.head = hp;
-      if (bone.Bip01_R_Hand) { const a = bone.Bip01_R_Hand.getWorldPosition(new THREE.Vector3()), f = (bone.Bip01_R_Finger2 || bone.Bip01_R_Hand).getWorldPosition(new THREE.Vector3()); hi.userData.hand = a.lerp(f, 0.7); }
+      if (bone.Bip01_R_Hand) { const a = bone.Bip01_R_Hand.getWorldPosition(new THREE.Vector3()), f = (bone.Bip01_R_Finger2 || bone.Bip01_R_Hand).getWorldPosition(new THREE.Vector3()); hi.userData.hand = grip || a.lerp(f, 0.7); }
       return { hi, lo };
     };
     const walk = CROWD_WALKERS.includes(name);

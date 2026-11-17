@@ -572,8 +572,8 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
           const y = p.ay ?? p.yaw, hd = p.G?.cur?.hi.userData.hand, sw = p.w * p.h, c = Math.cos(y), sn = Math.sin(y);
           const hx = hd ? hd.x : 0.12, hy = hd ? hd.y : 0.9, hz = hd ? hd.z : 0.28;
           const X = p.x + (hx * c + hz * sn) * sw, Z = p.z + (-hx * sn + hz * c) * sw, Y = hy * p.h + 0.02;
-          cp.setXYZ(i, X, Y + 0.2, Z);
-          if (sticks) { m4.makeTranslation(X, Y + 0.085, Z); sticks.setMatrixAt(i, m4); }
+          cp.setXYZ(i, X, Y + 0.155, Z);
+          if (sticks) { m4.makeTranslation(X, Y + 0.03, Z); sticks.setMatrixAt(i, m4); }
         });
         if (sticks) sticks.instanceMatrix.needsUpdate = true;
         cp.needsUpdate = true;
