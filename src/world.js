@@ -440,7 +440,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
   }
   const CP = crowdPoses();
   const mods = CP.models.map((M, mi) => mi).filter((mi) => !move || CP.models[mi].walk);
-  const NG = move ? 8 : 3;
+  const NG = move ? 8 : 6;
   const people = pts.map((p) => {
     let yaw = r() * Math.PI * 2;
     if (faceTarget) yaw = Math.atan2(faceTarget[0] - p.x, faceTarget[1] - p.z) + (r() - 0.5) * 0.9;
@@ -453,6 +453,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
       hat: r() < 0.5 ? new THREE.Color(HATS[Math.floor(r() * HATS.length)]) : null,
     };
   });
+  if (!move) people.forEach((p) => { if (p.candle) p.g += 3; });   // pózy 3–5 držia sviečku pred hruďou
   // čiapky (len časť davu) – jedna inštancovaná sieť pre všetkých
   const hatted = people.filter((p) => p.hat);
   const capGeo = new THREE.SphereGeometry(1, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.55);
@@ -472,18 +473,22 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
       hi.castShadow = true; hi.receiveShadow = true; lo.castShadow = !B.env.night;
       hi.frustumCulled = lo.frustumCulled = false;
       B.add(hi); B.add(lo);
-      groups.push({ list, hi, lo, max: hi.count, g, geos, M });
+      const grp = { list, hi, lo, max: hi.count, g, geos, M };
+      list.forEach((p) => (p.G = grp));
+      groups.push(grp);
     }
   }
   // sviečky
   const cand = people.filter((p) => p.candle);
-  let candlePts = null;
+  let candlePts = null, sticks = null;
   if (cand.length) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(cand.length * 3), 3));
     candlePts = new THREE.Points(geo, new THREE.PointsMaterial({ map: glowTex(), color: 0xffb04a, size: 0.3, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     candlePts.frustumCulled = false;
     B.add(candlePts);
+    sticks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.011, 0.011, 0.17, 6), new THREE.MeshStandardMaterial({ color: 0xf3ecd8, emissive: 0x6a4a20, roughness: 0.8 }), cand.length);
+    sticks.frustumCulled = false; B.add(sticks);
     if (B.env.night) for (let i = 0; i < 4 && i < cand.length; i++) {
       const c = cand[Math.floor((i / 4) * cand.length)];
       const L = new THREE.PointLight(0xffa040, 8, 12, 1.5);
@@ -511,7 +516,8 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     if (!still) { lx = pp.x; lz = pp.z; }
     for (const G of groups) {
       let geo = move ? G.geos[(G.g + f) % NG] : moveCfg ? G.M.idle[G.g % 2] : G.geos[G.g];
-      if (!moveCfg && B.crowdMode === 'cheer' && G.g < 2) geo = G.M.cheer[(Math.floor(t * 4.5) + G.g) % 3]; // jasajúci dav
+      const cheerOk = G.g % 3 < 2;
+      if (!moveCfg && B.crowdMode === 'cheer' && cheerOk) geo = G.M.cheer[(Math.floor(t * 4.5) + G.g) % 3]; // jasajúci dav
       if (G.cur !== geo) { G.hi.geometry = geo.hi; G.lo.geometry = geo.lo; G.cur = geo; }
       if (still) continue; // stojaci dav stačí rozmiestniť, len keď sa hráč pohne
       const head = geo.hi.userData.head, capR = 0.108, capY = G.M.headTop - 0.125;
@@ -535,7 +541,7 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
         if (move) { p.ay = p.yaw; e.set(0, p.yaw, 0); s.set(p.w * p.h, p.h, p.w * p.h); v.set(p.x, 0, p.z); }
         else {
           // stojaci človek: pomalé obzeranie sa, prenášanie váhy z nohy na nohu, dych; kľačiaci sa hýbe menej
-          const k = !moveCfg && p.g === 2 ? 0.35 : 1, a = t + p.ph * 7;
+          const k = !moveCfg && p.g % 3 === 2 ? 0.35 : 1, a = t + p.ph * 7;
           const look = (Math.sin(a * 0.21) + Math.sin(a * 0.083 + p.ph)) * 0.11 * k;
           const sw = Math.sin(a * 0.55 + p.ph * 3), fw = Math.sin(a * 0.37 + p.ph * 5);
           p.ay = p.yaw + look;
@@ -561,7 +567,15 @@ function crowd(B, { count, area, clear = [], seed = 5, faceTarget = null, candle
     if (candlePts) {
       const cp = candlePts.geometry.attributes.position;
       {
-        cand.forEach((p, i) => { const y = p.ay ?? p.yaw; cp.setXYZ(i, p.x + Math.sin(y) * 0.28 + Math.cos(y) * 0.12, (!moveCfg && p.g === 2 ? 0.62 : 1.02) * p.h + Math.sin(t * 0.9 + p.ph * 4) * 0.012, p.z + Math.cos(y) * 0.28 - Math.sin(y) * 0.12); });
+        cand.forEach((p, i) => {
+          // plameň sedí nad dlaňou zapečenej pózy; knôt je tesne pod ním
+          const y = p.ay ?? p.yaw, hd = p.G?.cur?.hi.userData.hand, sw = p.w * p.h, c = Math.cos(y), sn = Math.sin(y);
+          const hx = hd ? hd.x : 0.12, hy = hd ? hd.y : 0.9, hz = hd ? hd.z : 0.28;
+          const X = p.x + (hx * c + hz * sn) * sw, Z = p.z + (-hx * sn + hz * c) * sw, Y = hy * p.h + 0.02;
+          cp.setXYZ(i, X, Y + 0.2, Z);
+          if (sticks) { m4.makeTranslation(X, Y + 0.085, Z); sticks.setMatrixAt(i, m4); }
+        });
+        if (sticks) sticks.instanceMatrix.needsUpdate = true;
         cp.needsUpdate = true;
       }
       candlePts.material.size = 0.29 + Math.sin(t * 17) * 0.02;

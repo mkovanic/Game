@@ -160,6 +160,23 @@ function attach(bone, obj, at) {
   bone.add(obj);
 }
 
+// Pravá ruka drží sviečku pred hruďou. Osi sú v priestore postavy (Y hore, Z dopredu); `rq` je svetové natočenie postavy.
+const _ax = new THREE.Vector3(), _bq = new THREE.Quaternion(), _hp = new THREE.Vector3(), _rp = new THREE.Vector3();
+function bendIn(bone, axis, angle, rq) {
+  _ax.copy(axis); if (rq) _ax.applyQuaternion(rq);
+  bone.rotateOnAxis(_ax.applyQuaternion(bone.getWorldQuaternion(_bq).invert()), angle);
+}
+const AX = new THREE.Vector3(1, 0, 0), AY = new THREE.Vector3(0, 1, 0);
+function candleArm(upper, fore, hand, rootObj, rq) {
+  if (!upper || !fore) return;
+  bendIn(upper, AX, -0.38, rq);
+  bendIn(fore, AX, -1.38, rq);
+  // dlaň pritiahnuť k stredu tela: podľa toho, na ktorej strane ruka je
+  hand.getWorldPosition(_hp); rootObj.getWorldPosition(_rp); _hp.sub(_rp);
+  if (rq) _hp.applyQuaternion(_bq.copy(rq).invert());
+  bendIn(upper, AY, (_hp.x < 0 ? 1 : -1) * 0.42, rq);
+}
+
 export function makeCharacter(look = {}) {
   const M = models[look.model] || models.Male_Adult_03;
   const inner = skClone(M.scene);
@@ -182,7 +199,8 @@ export function makeCharacter(look = {}) {
     const n = wp(B.Neck); n.y -= 0.012; n.z += 0.018;
     attach(B.Neck, s, n);
   }
-  let flame = null;
+  let flame = null, candleObj = null;
+  const rq = new THREE.Quaternion(), cq = new THREE.Quaternion();
   if (look.candle && B.R_Hand) {
     const c = new THREE.Group();
     c.add(new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.2, 8), stdm(0xf3ecd8)));
@@ -192,6 +210,7 @@ export function makeCharacter(look = {}) {
     const L = new THREE.PointLight(0xffa040, 1.2, 4, 1.5); L.position.y = 0.2; c.add(L);
     const h = wp(B.R_Hand), f = B.R_Finger2 ? wp(B.R_Finger2) : h.clone();
     attach(B.R_Hand, c, h.lerp(f, 0.7).add(new THREE.Vector3(0, 0.02, 0)));
+    candleObj = c;
   }
   const mixer = new THREE.AnimationMixer(inner);
   let idle = mixer.clipAction(clipFor(M, look.idle || (Math.random() < 0.5 ? 'idle' : 'idle3')));
@@ -221,6 +240,12 @@ export function makeCharacter(look = {}) {
         b.reset().play(); a.crossFadeTo(b, 0.5, false);
       }
       mixer.update(dt);
+      if (candleObj) {
+        // ruka so sviečkou zdvihnutá pred hruď, sviečka stále zvislo
+        root.getWorldQuaternion(rq);
+        candleArm(B.R_UpperArm, B.R_Forearm, B.R_Hand, root, rq);
+        candleObj.quaternion.copy(B.R_Hand.getWorldQuaternion(cq).invert()).multiply(rq);
+      }
       hy += (yaw - hy) * Math.min(1, dt * 4);
       head.rotateOnAxis(upL, hy);
       if (talking) head.rotateOnAxis(sideL, Math.sin(t * 7) * 0.03 + Math.sin(t * 2.3) * 0.025);
@@ -276,7 +301,7 @@ function bakeCrowd() {
     const mixer = new THREE.AnimationMixer(inst);
     const bone = {}; inst.traverse((o) => { if (o.isBone || o.name === 'Bip01') bone[o.name] = o; });
     const X = new THREE.Vector3(1, 0, 0), bq = new THREE.Quaternion(), bend = (b, a) => b.rotateOnAxis(X.clone().applyQuaternion(b.getWorldQuaternion(bq).invert()), a);
-    const pose = (clip, time, kneel = false) => {
+    const pose = (clip, time, kneel = false, candle = false) => {
       mixer.stopAllAction();
       const c = clipFor(M, clip), act = mixer.clipAction(c); act.play(); mixer.setTime(time * c.duration);
       if (kneel) { // kľak na obe kolená: lýtka dozadu, trup klesne tak, aby kolená boli na zemi; hlava sklonená
@@ -286,6 +311,7 @@ function bakeCrowd() {
         holder.updateMatrixWorld(true);
         bone.Bip01.position.y -= bone.Bip01_L_Calf.getWorldPosition(v).y - 0.09;
       }
+      if (candle) { holder.updateMatrixWorld(true); candleArm(bone.Bip01_R_UpperArm, bone.Bip01_R_Forearm, bone.Bip01_R_Hand, holder, null); }
       holder.updateMatrixWorld(true); mesh.skeleton.update();
       const P = new Float32Array(N * 3);
       for (let i = 0; i < N; i++) { v.fromBufferAttribute(pos, i); mesh.applyBoneTransform(i, v); v.applyMatrix4(mesh.matrixWorld); P[i * 3] = v.x; P[i * 3 + 1] = v.y; P[i * 3 + 2] = v.z; }
@@ -301,12 +327,14 @@ function bakeCrowd() {
       lo.setIndex(loIdx); lo.computeVertexNormals();
       const hp = new THREE.Vector3(); head.getWorldPosition(hp);
       hi.userData.head = hp;
+      if (bone.Bip01_R_Hand) { const a = bone.Bip01_R_Hand.getWorldPosition(new THREE.Vector3()), f = (bone.Bip01_R_Finger2 || bone.Bip01_R_Hand).getWorldPosition(new THREE.Vector3()); hi.userData.hand = a.lerp(f, 0.7); }
       return { hi, lo };
     };
     const walk = CROWD_WALKERS.includes(name);
     out.models.push({
       name, mat: crowdMaterial(M.mat), headTop: M.headTop, noHat: HAS_HAT.test(name),
-      idle: [pose('idle', 0.15), pose('idle2', 0.55), pose('idle', 0.6, true)],
+      // 0–2: stojaci, stojaci, kľačiaci; 3–5: to isté so sviečkou v ruke pred hruďou
+      idle: [pose('idle', 0.15), pose('idle2', 0.55), pose('idle', 0.6, true), pose('idle', 0.15, false, true), pose('idle2', 0.55, false, true), pose('idle', 0.6, true, true)],
       cheer: [pose('cheer', 0.2), pose('cheer', 0.4), pose('cheer', 0.6)],
       walk: walk ? Array.from({ length: 8 }, (_, i) => pose('walk', i / 8)) : null,
     });
