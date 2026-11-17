@@ -1,5 +1,5 @@
 # Sviečky a kľúče – statický web (úvodná stránka + hra) na nginx.
-#   docker buildx build --platform linux/amd64 --build-arg SITE_URL=https://17november.eu -t <registry>/sviecky-a-kluce:<verzia> --push .
+#   docker buildx build --platform linux/amd64 --build-arg SITE_URL=https://17november.eu --build-arg POSTHOG_KEY=phc_ueLKmkMMFc8oLLnfqWhJJmM6e5McHqyNYwXCbVZxLYSc -t <registry>/sviecky-a-kluce:<verzia> --push .
 FROM node:22-alpine AS site
 WORKDIR /app
 ARG SITE_URL=https://17november.eu
